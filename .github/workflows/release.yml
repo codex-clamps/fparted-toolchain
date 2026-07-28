@@ -43,6 +43,10 @@ jobs:
           ")
           echo "termux_commit=${COMMIT}" >> $GITHUB_OUTPUT
 
+      - name: Install dependencies
+        run: |
+          python3 -m pip install pyyaml
+
       - name: Build rootfs
         run: |
           bash scripts/build-rootfs.sh \
