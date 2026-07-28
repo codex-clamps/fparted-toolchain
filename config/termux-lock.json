@@ -1,6 +1,6 @@
 {
   "$schema": "termux-lock-v1",
-  "pinned_termux_commit": "038b483a4c8dab13b4e928e6dec4f89c06256e6d",
+  "pinned_termux_commit": "e0177c596fc96693f9a008f73e3482cf25873a84",
   "pinned_date": "2026-07-28",
   "android_ndk": "r27e",
   "android_sdk": "35",
