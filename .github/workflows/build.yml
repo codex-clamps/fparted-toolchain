@@ -2,14 +2,14 @@ name: Build Rootfs Bundles
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'config/**'
       - 'patches/**'
       - 'scripts/**'
 
   pull_request:
-    branches: [main]
+    branches: [master]
 
   workflow_dispatch:
 
