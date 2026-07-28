@@ -5,8 +5,8 @@
 packages:
   parted:
     name: parted
-    upstream_url: "https://gnu.org/software/parted/parted-4.4.tar.xz"
-    source_hash: "sha256:PLACEHOLDER-PARTED"
+    upstream_url: "https://ftp.gnu.org/gnu/parted/parted-3.6.tar.xz"
+    source_hash: "sha256:3b43dbe33cca0f9a18601ebab56b7852b128ec1a3df3a9b30ccde5e73359e612"
     license: "GPL-3.0"
     maintainer: "fparted-tools"
     dependencies: []
@@ -15,8 +15,8 @@ packages:
 
   blkid:
     name: blkid
-    upstream_url: "https://sourceforge.net/projects/util-linux/files/blkid/v2.40/blkid-2.40.tar.xz"
-    source_hash: "sha256:PLACEHOLDER-BLKID"
+    upstream_url: "https://github.com/util-linux/util-linux/archive/v2.40.1.tar.gz"
+    source_hash: "sha256:61f815bbfaabad7a6a56af6cb5c5bc7e2d26ae764b1e59901fd809ac3fd55f68"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -26,7 +26,7 @@ packages:
   dd:
     name: dd
     upstream_url: "https://git.savannah.gnu.org/git/core.git"
-    source_hash: "sha256:PLACEHOLDER-DD"
+    source_hash: "sha256:cd328edeac92f6a665de9f323c93b712af1858bc2e0d88f3f7100469470a1b8a"
     license: "GPL-3.0"
     maintainer: "fparted-tools"
     dependencies: []
@@ -36,7 +36,7 @@ packages:
   test:
     name: test
     upstream_url: "https://git.savannah.gnu.org/git/core.git"
-    source_hash: "sha256:PLACEHOLDER-TEST"
+    source_hash: "sha256:cd328edeac92f6a665de9f323c93b712af1858bc2e0d88f3f7100469470a1b8a"
     license: "GPL-3.0"
     maintainer: "fparted-tools"
     dependencies: []
@@ -65,8 +65,8 @@ packages:
 
   exfatprogs:
     name: exfatprogs
-    upstream_url: "https://github.com/relan/exfatprogs/releases/download/v1.2.2/exfatprogs-1.2.2.tar.xz"
-    source_hash: "sha256:PLACEHOLDER-EXFATPROGS"
+    upstream_url: "https://github.com/exfatprogs/exfatprogs/archive/refs/tags/1.4.2.tar.gz"
+    source_hash: "sha256:01fa92129168f393aeb53ddb22ebcbce2c57345c7193c911b43549d68e5b24f7"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: [libexfat]
@@ -75,8 +75,8 @@ packages:
 
   f2fs-tools:
     name: f2fs-tools
-    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git"
-    source_hash: "sha256:PLACEHOLDER-F2FSTOOLS"
+    upstream_url: "https://github.com/jaegeuk/f2fs-tools/archive/refs/tags/v1.9.0.tar.gz"
+    source_hash: "sha256:77217562ae7011a6d81b7b3c43c42623db1796a57596408d6c8037def70d6cc7"
     license: "GPL-2.0"
     maintainer: "fparted-tools"
     dependencies: [libf2fs]
@@ -85,8 +85,8 @@ packages:
 
   btrfs-progs:
     name: btrfs-progs
-    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/kd/btrfs-progs.git"
-    source_hash: "sha256:PLACEHOLDER-BTRFSPROGS"
+    upstream_url: "https://github.com/kdave/btrfs-progs/archive/refs/tags/v6.10.1.tar.gz"
+    source_hash: "sha256:ce7f1d1c33bf5b3acd418466e7e412026e435b05f187e779a1c5303ebf1b1f96"
     license: "GPL-2.0"
     maintainer: "fparted-tools"
     dependencies: [libbtrfs]
@@ -95,8 +95,8 @@ packages:
 
   mkfs.btrfs:
     name: mkfs.btrfs
-    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/kd/btrfs-progs.git"
-    source_hash: "sha256:PLACEHOLDER-BTRFSPROGS"
+    upstream_url: "https://github.com/kdave/btrfs-progs/archive/refs/tags/v6.10.1.tar.gz"
+    source_hash: "sha256:ce7f1d1c33bf5b3acd418466e7e412026e435b05f187e779a1c5303ebf1b1f96"
     license: "GPL-2.0"
     maintainer: "fparted-tools"
     dependencies: [btrfs-progs]
@@ -105,8 +105,8 @@ packages:
 
   hfsprogs:
     name: hfsprogs
-    upstream_url: "https://sourceforge.net/projects/hfsplus/files/hfsprogs/v3.3.2/hfsprogs-3.3.2.tar.gz"
-    source_hash: "sha256:PLACEHOLDER-HFSPROGS"
+    upstream_url: "http://archive.ubuntu.com/ubuntu/pool/universe/h/hfsprogs/hfsprogs_332.25.orig.tar.gz"
+    source_hash: "sha256:74c9aeca899ed7f4bf155c65fc45bf0f250c0f6d57360ea953b1d536d9aa45e6"
     license: "GPL-2.0"
     maintainer: "fparted-tools"
     dependencies: []
@@ -115,8 +115,8 @@ packages:
 
   jfsutils:
     name: jfsutils
-    upstream_url: "https://sourceforge.net/projects/jfsutils/files/jfsutils/v1.1.15/jfsutils-1.1.15.tar.gz"
-    source_hash: "sha256:PLACEHOLDER-JFSUTILS"
+    upstream_url: "http://deb.debian.org/debian/pool/main/j/jfsutils/jfsutils_1.1.15.orig.tar.gz"
+    source_hash: "sha256:bc17a4cd96e986815ef5ac5e7086e452f996c3178046cd278dafd6c202e6c578"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -125,8 +125,8 @@ packages:
 
   ntfsprogs-plus:
     name: ntfsprogs-plus
-    upstream_url: "https://github.com/linux-ntfs/ntfs-3g/releases/download/v2022.10.3/ntfs-3g-2022.10.3.tgz"
-    source_hash: "sha256:PLACEHOLDER-NTFPROGS"
+    upstream_url: "https://github.com/tuxera/ntfs-3g/archive/refs/tags/2022.10.3.tar.gz"
+    source_hash: "sha256:8bd7749ea9d8534c9f0664d48b576e90b96d45ec8803c9427f6ffaa2f0dde299"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -155,8 +155,8 @@ packages:
 
   libisofs:
     name: libisofs
-    upstream_url: "https://ftp.gnu.org/gnu/libisofs/libisofs-1.5.2.tar.gz"
-    source_hash: "sha256:PLACEHOLDER-LIBISOFS"
+    upstream_url: "https://files.libburnia-project.org/releases/libisofs-1.5.2.tar.gz"
+    source_hash: "sha256:ef5a139600b3e688357450e52381e40ec26a447d35eb8d21524598c7b1675500"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -177,7 +177,7 @@ packages:
   lzma:
     name: lzma
     upstream_url: "https://tukaani.org/xz/xz-5.6.3.tar.xz"
-    source_hash: "sha256:PLACEHOLDER-LZMA"
+    source_hash: "sha256:db0590629b6f0fa36e74aea5f9731dc6f8df068ce7b7bafa45301832a5eebc3a"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -197,7 +197,7 @@ packages:
   xz:
     name: xz
     upstream_url: "https://tukaani.org/xz/xz-5.6.3.tar.xz"
-    source_hash: "sha256:PLACEHOLDER-XZ"
+    source_hash: "sha256:db0590629b6f0fa36e74aea5f9731dc6f8df068ce7b7bafa45301832a5eebc3a"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -216,8 +216,8 @@ packages:
 
   libexfat:
     name: libexfat
-    upstream_url: "https://github.com/relan/exfatprogs/releases/download/v1.2.2/exfatprogs-1.2.2.tar.xz"
-    source_hash: "sha256:PLACEHOLDER-LIBEXFAT"
+    upstream_url: "https://github.com/exfatprogs/exfatprogs/archive/refs/tags/1.4.2.tar.gz"
+    source_hash: "sha256:01fa92129168f393aeb53ddb22ebcbce2c57345c7193c911b43549d68e5b24f7"
     license: "GPL-2.0-or-later"
     maintainer: "fparted-tools"
     dependencies: []
@@ -226,8 +226,8 @@ packages:
 
   libf2fs:
     name: libf2fs
-    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git"
-    source_hash: "sha256:PLACEHOLDER-LIBF2FS"
+    upstream_url: "https://github.com/jaegeuk/f2fs-tools/archive/refs/tags/v1.9.0.tar.gz"
+    source_hash: "sha256:77217562ae7011a6d81b7b3c43c42623db1796a57596408d6c8037def70d6cc7"
     license: "GPL-2.0"
     maintainer: "fparted-tools"
     dependencies: []
@@ -236,8 +236,8 @@ packages:
 
   libbtrfs:
     name: libbtrfs
-    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/kd/btrfs-progs.git"
-    source_hash: "sha256:PLACEHOLDER-LIBBTRFS"
+    upstream_url: "https://github.com/kdave/btrfs-progs/archive/refs/tags/v6.10.1.tar.gz"
+    source_hash: "sha256:ce7f1d1c33bf5b3acd418466e7e412026e435b05f187e779a1c5303ebf1b1f96"
     license: "GPL-2.0"
     maintainer: "fparted-tools"
     dependencies: []
