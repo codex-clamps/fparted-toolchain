@@ -96,35 +96,66 @@ git apply --check "${REPO_ROOT}/patches/termux-prefix.patch" 2>/dev/null || {
 }
 cd "${REPO_ROOT}"
 
-# --- Step 3: Build packages for target architecture ---
-echo "[3/6] Building packages for ${TARGET_ARCH} ..."
+# --- Step 3: Build packages for target architecture via Termux Docker ---
+echo "[3/6] Building packages for ${TARGET_ARCH} via Termux Docker builder ..."
+
+TERMUX_PKGS=(
+    parted
+    util-linux
+    coreutils
+    e2fsprogs
+    dosfstools
+    exfatprogs
+    f2fs-tools
+    btrfs-progs
+)
+
 cd "${CHECKOUT_DIR}"
 
-# Set Termux build environment
-export TERMUX_PREFIX="/data/data/vn.shadichy.parted/files"
-export TERMUX_HOME="${TERMUX_PREFIX}/home"
-export TERMUX_APP__PACKAGE_NAME="vn.shadichy.parted"
-export TERMUX__ROOTFS="/data/data/vn.shadichy.parted/files"
-export TERMUX__PREFIX="/data/data/vn.shadichy.parted/files"
-export TERMUX__PREFIX_SUBDIR=""
-export __TERMUX_BUILD_PROPS__VALIDATE_TERMUX_PREFIX_USR_MERGE_FORMAT=false
+python3 -c "
+import json
+with open('repo.json') as f:
+    data = json.load(f)
+data['pkg_format'] = 'pacman'
+data['overlay-packages'] = {'name': 'overlay'}
+with open('repo.json', 'w') as f:
+    json.dump(data, f, indent=2)
+"
 
-# Build each required package using Termux build system
-# Note: In production, this uses the Termux build infrastructure
-# (docker containers or local NDK setup)
-REQUIRED_BINS=$(python3 -c "
-import sys, yaml
-with open('${CONFIG_DIR}/required-binaries.yaml') as f:
-    data = yaml.safe_load(f)
-for b in data.get('required_binaries', []):
-    print(b)
-")
+if [[ -d "${REPO_ROOT}/config/overlay-packages" ]]; then
+    mkdir -p "${CHECKOUT_DIR}/overlay-packages"
+    cp -r "${REPO_ROOT}/config/overlay-packages/"* "${CHECKOUT_DIR}/overlay-packages/"
+    echo "  Copied overlay packages: $(ls ${CHECKOUT_DIR}/overlay-packages/ 2>/dev/null | tr '\n' ' ')"
+fi
 
-echo "Packages to build for ${TARGET_ARCH}:"
-echo "${REQUIRED_BINS}"
+BUILD_OUTPUT_DIR="${STAGING_DIR}/packages"
+mkdir -p "${BUILD_OUTPUT_DIR}"
 
-# Placeholder: actual Termux package build would happen here
-echo "(Build step requires Termux build environment / NDK setup)"
+if command -v docker &>/dev/null; then
+    echo "  Pulling Termux builder image: ghcr.io/termux/package-builder"
+    docker pull ghcr.io/termux/package-builder
+
+    echo "  Building packages: ${TERMUX_PKGS[*]}"
+    docker run --rm \
+        --volume "${CHECKOUT_DIR}:/home/builder/termux-packages" \
+        --volume "${BUILD_OUTPUT_DIR}:/output" \
+        --workdir /home/builder/termux-packages \
+        ghcr.io/termux/package-builder \
+        ./build-package.sh -a "${TARGET_ARCH}" --format pacman -o /output -Q "${TERMUX_PKGS[@]}"
+else
+    echo "  WARNING: docker not available on this system."
+    echo "  Install Docker and re-run to build packages."
+    echo "  https://docs.docker.com/engine/install/"
+    echo ""
+    echo "  To build manually:"
+    echo "    docker pull ghcr.io/termux/package-builder"
+    echo "    docker run --rm -v \$(pwd):/home/builder/termux-packages ghcr.io/termux/package-builder \\"
+    echo "      ./build-package.sh -a ${TARGET_ARCH} --format pacman ${TERMUX_PKGS[*]}"
+    exit 1
+fi
+
+echo "  Built packages:"
+ls -lh "${BUILD_OUTPUT_DIR}/"*.pkg.tar.xz 2>/dev/null | sed 's/^/    /' || echo "  (no packages found — check build output above)"
 
 cd "${REPO_ROOT}"
 
@@ -136,9 +167,33 @@ mkdir -p "${ROOTFS_DIR}/lib"
 mkdir -p "${ROOTFS_DIR}/home"
 mkdir -p "${ROOTFS_DIR}/tmp"
 
-# Placeholder: copy built packages from checkout staging-area to ROOTFS_DIR
-# Each package's runtime files would be copied here
-echo "(Extraction step: copy runtime files from Termux build output)"
+if [[ -d "${BUILD_OUTPUT_DIR}" ]]; then
+    pkg_count=0
+    for pkg in "${BUILD_OUTPUT_DIR}"/*.pkg.tar.xz; do
+        [[ -f "${pkg}" ]] || continue
+        echo "  Extracting: $(basename "${pkg}")"
+        tar -C "${ROOTFS_DIR}" -xf "${pkg}" \
+            --exclude='.BUILDINFO' \
+            --exclude='.MTREE' \
+            --exclude='.PKGINFO' \
+            --exclude='include/*' \
+            --exclude='*.a' \
+            --exclude='*.la' \
+            --exclude='*.pc' \
+            --exclude='share/man/*' \
+            --exclude='share/doc/*' \
+            --exclude='share/info/*' \
+            --exclude='share/gtk-doc/*' \
+            2>/dev/null || true
+        pkg_count=$((pkg_count + 1))
+    done
+    find "${ROOTFS_DIR}/include" -type d -empty -delete 2>/dev/null || true
+    echo "  Extracted ${pkg_count} packages into ${ROOTFS_DIR}"
+    echo "  Rootfs contents: bin/ has $(ls "${ROOTFS_DIR}/bin/" 2>/dev/null | wc -l) entries, lib/ has $(ls "${ROOTFS_DIR}/lib/" 2>/dev/null | wc -l) entries"
+else
+    echo "  WARNING: Build output directory not found at ${BUILD_OUTPUT_DIR}"
+    echo "  Rootfs will be empty"
+fi
 
 # --- Step 5: Recreate modes, symlinks, and verify hashes ---
 echo "[5/6] Normalizing permissions and verifying integrity ..."
@@ -153,26 +208,13 @@ done
 # Verify ELF artifacts
 echo "(ELF validation step: verify architecture and Bionic linkage)"
 
-# --- Step 6: Generate rootfs-manifest.json ---
-echo "[6/6] Generating rootfs manifest ..."
+# --- Step 6: Generate rootfs-manifest.json and bundle ---
+echo "[6/6] Generating rootfs manifest and bundle ..."
 python3 "${SCRIPT_DIR}/assemble-rootfs.py" \
     --abi "${TARGET_ABI}" \
     --rootfs-dir "${ROOTFS_DIR}" \
-    --output "${STAGING_DIR}/rootfs-manifest.json" 2>/dev/null || {
-    echo "WARNING: assemble-rootfs.py not yet functional; generating placeholder manifest"
-    python3 -c "
-import json, os, time
-manifest = {
-    'schema_version': '1.0',
-    'generated_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-    'abi': '${TARGET_ABI}',
-    'termux_commit': '${TERMUX_COMMIT}',
-    'entries': []
-}
-with open('${STAGING_DIR}/rootfs-manifest.json', 'w') as f:
-    json.dump(manifest, f, indent=2)
-"
-}
+    --output "${STAGING_DIR}" \
+    --termux-commit "${TERMUX_COMMIT}"
 
 echo "=== Build complete ==="
 echo "  Output: ${STAGING_DIR}/rootfs-manifest.json"
