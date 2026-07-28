@@ -14,7 +14,7 @@ FORBIDDEN_PREFIXES = [
     "/data/data/com.termux",
 ]
 
-SUPPORTED_ABIS = {"arm64-v8a", "armeabi-v7a", "x86", "x86_64"}
+SUPPORTED_ABIS = {"arm64-v8a", "armv7a", "i686", "x86_64"}
 
 REQUIRED_BINARIES = [
     "parted", "blkid", "dd", "test",

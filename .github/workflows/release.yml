@@ -142,7 +142,7 @@ jobs:
         id: bundle
         run: |
           BUNDLE=$(find /tmp/fparted-test -name "*.zip" | head -1)
-          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-\Karm64-v8a|armeabi-v7a|x86|x86_64)')
+          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)arm64-v8a|armv7a|i686|x86_64')
           echo "bundle=${BUNDLE}" >> $GITHUB_OUTPUT
           echo "abi=${ABI}" >> $GITHUB_OUTPUT
 

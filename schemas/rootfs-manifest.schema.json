@@ -16,7 +16,7 @@
     },
     "abi": {
       "type": "string",
-      "enum": ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"]
+      "enum": ["arm64-v8a", "armv7a", "i686", "x86_64"]
     },
     "termux_commit": {
       "type": "string",
