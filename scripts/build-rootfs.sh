@@ -137,6 +137,8 @@ if command -v docker &>/dev/null; then
 
     echo "  Building packages: ${TERMUX_PKGS[*]}"
     docker run --rm \
+        --device /dev/fuse \
+        --cap-add SYS_ADMIN \
         --volume "${CHECKOUT_DIR}:/home/builder/termux-packages" \
         --volume "${BUILD_OUTPUT_DIR}:/output" \
         --workdir /home/builder/termux-packages \
@@ -149,7 +151,8 @@ else
     echo ""
     echo "  To build manually:"
     echo "    docker pull ghcr.io/termux/package-builder"
-    echo "    docker run --rm -v \$(pwd):/home/builder/termux-packages ghcr.io/termux/package-builder \\"
+    echo "    docker run --rm --device /dev/fuse --cap-add SYS_ADMIN \\"
+    echo "      -v \$(pwd):/home/builder/termux-packages ghcr.io/termux/package-builder \\"
     echo "      ./build-package.sh -a ${TARGET_ARCH} --format pacman ${TERMUX_PKGS[*]}"
     exit 1
 fi
