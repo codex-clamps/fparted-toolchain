@@ -33,7 +33,7 @@ TERMUX_COMMIT="${2:-}"
 
 # ABI validation
 case "${TARGET_ABI}" in
-    arm64-v8a|armeabi-v7a|x86|x86_64) ;;
+    arm64-v8a|armv7a|i686|x86_64) ;;
     *)
         echo "ERROR: Unsupported ABI '${TARGET_ABI}'. Must be one of: arm64-v8a armv7a i686 x86_64" >&2
         exit 1
@@ -43,8 +43,8 @@ esac
 # Map Android ABI to Termux architecture
 declare -A ABI_MAP=(
     ["arm64-v8a"]="aarch64"
-    ["armeabi-v7a"]="arm"
-    ["x86"]="i686"
+    ["armv7a"]="arm"
+    ["i686"]="i686"
     ["x86_64"]="x86_64"
 )
 TARGET_ARCH="${ABI_MAP[${TARGET_ABI}]}"
