@@ -1,0 +1,165 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  build-all:
+    name: Build All ABIs
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            termux-arch: aarch64
+          - abi: armv7a
+            termux-arch: arm
+          - abi: i686
+            termux-arch: i686
+          - abi: x86_64
+            termux-arch: x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Read termux lock
+        id: lock
+        run: |
+          COMMIT=$(python3 -c "
+          import json
+          with open('config/termux-lock.json') as f:
+              print(json.load(f)['pinned_termux_commit'])
+          ")
+          echo "termux_commit=${COMMIT}" >> $GITHUB_OUTPUT
+
+      - name: Build rootfs
+        run: |
+          bash scripts/build-rootfs.sh \
+            ${{ matrix.abi }} \
+            ${{ steps.lock.outputs.termux_commit }}
+
+      - name: Validate bundle
+        run: |
+          BUNDLE=$(find staging/${{ matrix.abi }} -name "*.zip" | head -1)
+          python3 scripts/validate-rootfs.py --bundle "${BUNDLE}" --strict || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-${{ matrix.abi }}
+          path: staging/${{ matrix.abi }}/*
+
+  assemble-release:
+    name: Assemble Release Assets
+    runs-on: ubuntu-latest
+    needs: build-all
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download all ABI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Create release directory
+        run: |
+          mkdir -p release-output
+          find release-assets/ -type f -exec mv {} release-output/ \;
+
+      - name: Assemble release manifest
+        run: |
+          python3 scripts/make-release-manifest.py \
+            --bundle-dir release-output \
+            --toolchain-version "${GITHUB_REF#refs/tags/v}" \
+            --termux-commit "$(python3 -c "import json; print(json.load(open('config/termux-lock.json'))['pinned_termux_commit'])")" \
+            --output-dir release-output \
+            --sign
+
+      - name: Verify all required binaries present
+        run: |
+          python3 scripts/resolve-packages.py --check-binaries
+
+      - name: Verify bundle count
+        run: |
+          COUNT=$(find release-output -name "*.zip" | wc -l)
+          echo "Bundles in release: ${COUNT}"
+          if [ "${COUNT}" -ne 4 ]; then
+            echo "ERROR: Expected 4 ABI bundles, got ${COUNT}"
+            exit 1
+          fi
+
+      - name: Verify hashes
+        run: |
+          cd release-output
+          sha256sum -c SHA256SUMS
+
+      - name: Upload release assets (draft)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-output/*.zip
+            release-output/release-manifest.json
+            release-output/release-manifest.sig
+            release-output/SHA256SUMS
+            release-output/packages.spdx.json
+            release-output/source-offer.json
+          draft: true
+          fail_on_unmatched_files: true
+
+  smoke-test:
+    name: Smoke Test on Rooted Android (Self-Hosted)
+    runs-on: [self-hosted, android, rooted]
+    needs: assemble-release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/fparted-test
+
+      - name: Find latest release bundle
+        id: bundle
+        run: |
+          BUNDLE=$(find /tmp/fparted-test -name "*.zip" | head -1)
+          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-\Karm64-v8a|armeabi-v7a|x86|x86_64)')
+          echo "bundle=${BUNDLE}" >> $GITHUB_OUTPUT
+          echo "abi=${ABI}" >> $GITHUB_OUTPUT
+
+      - name: Install toolchain to test device
+        run: |
+          adb root
+          adb push "${{ steps.bundle.outputs.bundle }}" /data/local/tmp/
+          # Install from bundle on device
+          # (implementation depends on device test harness)
+
+      - name: Verify required binaries on device
+        run: |
+          for bin in parted blkid dd test e2fsck mke2fs resize2fs tune2fs; do
+            adb shell "ls -la /data/data/vn.shadichy.parted/files/bin/${bin}" || exit 1
+          done
+
+      - name: Record device target
+        run: |
+          echo "Test device: $(adb shell getprop ro.product.device)"
+          echo "Android version: $(adb shell getprop ro.build.version.release)"

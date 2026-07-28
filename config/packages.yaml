@@ -1,0 +1,245 @@
+# Package definitions for fparted-toolchain.
+# Each package must have: name, upstream URL, immutable source hash, license,
+# maintainer, dependency list, patches (if any), and smoke-test command.
+
+packages:
+  parted:
+    name: parted
+    upstream_url: "https://gnu.org/software/parted/parted-4.4.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-PARTED"
+    license: "GPL-3.0"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "parted --version"
+
+  blkid:
+    name: blkid
+    upstream_url: "https://sourceforge.net/projects/util-linux/files/blkid/v2.40/blkid-2.40.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-BLKID"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "blkid --version"
+
+  dd:
+    name: dd
+    upstream_url: "https://git.savannah.gnu.org/git/core.git"
+    source_hash: "sha256:PLACEHOLDER-DD"
+    license: "GPL-3.0"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "dd --version"
+
+  test:
+    name: test
+    upstream_url: "https://git.savannah.gnu.org/git/core.git"
+    source_hash: "sha256:PLACEHOLDER-TEST"
+    license: "GPL-3.0"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test --help || true"
+
+  e2fsprogs:
+    name: e2fsprogs
+    upstream_url: "https://sourceforge.net/projects/e2fsprogs/files/e2fsprogs/v1.47.2/e2fsprogs-1.47.2.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-E2FSPROGS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "e2fsck -V"
+
+  dosfstools:
+    name: dosfstools
+    upstream_url: "https://github.com/dosfstools/dosfstools/releases/download/v4.2/dosfstools-4.2.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-DOSFSTOOLS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "mkfs.fat -V"
+
+  exfatprogs:
+    name: exfatprogs
+    upstream_url: "https://github.com/relan/exfatprogs/releases/download/v1.2.2/exfatprogs-1.2.2.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-EXFATPROGS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: [libexfat]
+    patches: []
+    smoke_test: "mkfs.exfat -V"
+
+  f2fs-tools:
+    name: f2fs-tools
+    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git"
+    source_hash: "sha256:PLACEHOLDER-F2FSTOOLS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: [libf2fs]
+    patches: []
+    smoke_test: "mkfs.f2fs -V"
+
+  btrfs-progs:
+    name: btrfs-progs
+    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/kd/btrfs-progs.git"
+    source_hash: "sha256:PLACEHOLDER-BTRFSPROGS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: [libbtrfs]
+    patches: []
+    smoke_test: "btrfs --version"
+
+  mkfs.btrfs:
+    name: mkfs.btrfs
+    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/kd/btrfs-progs.git"
+    source_hash: "sha256:PLACEHOLDER-BTRFSPROGS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: [btrfs-progs]
+    patches: []
+    smoke_test: "mkfs.btrfs --help"
+
+  hfsprogs:
+    name: hfsprogs
+    upstream_url: "https://sourceforge.net/projects/hfsplus/files/hfsprogs/v3.3.2/hfsprogs-3.3.2.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-HFSPROGS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "hfsplus --help || true"
+
+  jfsutils:
+    name: jfsutils
+    upstream_url: "https://sourceforge.net/projects/jfsutils/files/jfsutils/v1.1.15/jfsutils-1.1.15.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-JFSUTILS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "mkfs.jfs -V || true"
+
+  ntfsprogs-plus:
+    name: ntfsprogs-plus
+    upstream_url: "https://github.com/linux-ntfs/ntfs-3g/releases/download/v2022.10.3/ntfs-3g-2022.10.3.tgz"
+    source_hash: "sha256:PLACEHOLDER-NTFPROGS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "ntfs-3g --version || true"
+
+  squashfs-tools:
+    name: squashfs-tools
+    upstream_url: "https://github.com/plougher/squashfs-tools/releases/download/4.6.1/squashfs-tools-4.6.1.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-SQUASHFS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: [zlib, lzma, lzo, xz, zstd]
+    patches: []
+    smoke_test: "mksquashfs -help || true"
+
+  xfsprogs:
+    name: xfsprogs
+    upstream_url: "https://sourceforge.net/projects/xfsprogs/files/xfsprogs/v6.6.0/xfsprogs-6.6.0.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-XFSPROGS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "mkfs.xfs -V || true"
+
+  libisofs:
+    name: libisofs
+    upstream_url: "https://ftp.gnu.org/gnu/libisofs/libisofs-1.5.2.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-LIBISOFS"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "libisofs --version || true"
+
+  # Root packages (compiled into rootfs, not user-space tools)
+  zlib:
+    name: zlib
+    upstream_url: "https://zlib.net/zlib-1.3.1.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-ZLIB"
+    license: "Zlib"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/libz.so"
+
+  lzma:
+    name: lzma
+    upstream_url: "https://tukaani.org/xz/xz-5.6.3.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-LZMA"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/liblzma.so"
+
+  lzo:
+    name: lzo
+    upstream_url: "https://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-LZO"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/liblzo2.so"
+
+  xz:
+    name: xz
+    upstream_url: "https://tukaani.org/xz/xz-5.6.3.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-XZ"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/liblzma.so"
+
+  zstd:
+    name: zstd
+    upstream_url: "https://github.com/facebook/zstd/releases/download/v1.5.6/zstd-1.5.6.tar.gz"
+    source_hash: "sha256:PLACEHOLDER-ZSTD"
+    license: "BSD-3-Clause"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/libzstd.so"
+
+  libexfat:
+    name: libexfat
+    upstream_url: "https://github.com/relan/exfatprogs/releases/download/v1.2.2/exfatprogs-1.2.2.tar.xz"
+    source_hash: "sha256:PLACEHOLDER-LIBEXFAT"
+    license: "GPL-2.0-or-later"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/libexfat.so"
+
+  libf2fs:
+    name: libf2fs
+    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git"
+    source_hash: "sha256:PLACEHOLDER-LIBF2FS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/libf2fs.so"
+
+  libbtrfs:
+    name: libbtrfs
+    upstream_url: "https://git.kernel.org/pub/scm/linux/kernel/git/kd/btrfs-progs.git"
+    source_hash: "sha256:PLACEHOLDER-LIBBTRFS"
+    license: "GPL-2.0"
+    maintainer: "fparted-tools"
+    dependencies: []
+    patches: []
+    smoke_test: "test -f ${PREFIX}/lib/libbtrfs.so"

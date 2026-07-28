@@ -1,0 +1,83 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fparted.shadichy.vn/schemas/rootfs-manifest.schema.json",
+  "title": "FPARTED Rootfs Manifest",
+  "description": "Schema for Repo A rootfs manifest files embedded inside bundles.",
+  "type": "object",
+  "required": ["schema_version", "abi", "termux_commit", "entries"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "abi": {
+      "type": "string",
+      "enum": ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"]
+    },
+    "termux_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "package_id": {
+      "type": "string",
+      "const": "vn.shadichy.parted"
+    },
+    "prefix": {
+      "type": "string",
+      "const": "/data/data/vn.shadichy.parted/files"
+    },
+    "entry_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "type", "mode"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "not": {
+              "pattern": "^(\\.\\./|/)"
+            },
+            "not": {
+              "contains": "\x00"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": ["directory", "file", "symlink"]
+          },
+          "mode": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 0o7777
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "Required for 'file' type entries"
+          },
+          "link_target": {
+            "type": "string",
+            "description": "Required for 'symlink' type entries"
+          },
+          "owner": {
+            "type": "string"
+          },
+          "mutability": {
+            "type": "string",
+            "enum": ["mutable", "immutable"]
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

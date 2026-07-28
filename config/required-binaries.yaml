@@ -1,0 +1,35 @@
+# Required binaries that must be present in every Repo A release bundle.
+# This is the source of truth shared with the fparted app (FpartedConstants.requiredBinaries).
+
+required_binaries:
+  # Partition table & layout
+  - parted
+  - blkid
+
+  # Low-level disk & copy utilities
+  - dd
+  - test
+
+  # ext2/3/4 filesystems (e2fsprogs)
+  - e2fsck
+  - mke2fs
+  - resize2fs
+  - tune2fs
+
+  # FAT filesystems (dosfstools)
+  - mkfs.fat
+  - fsck.fat
+  - fatlabel
+
+  # exFAT filesystems (exfatprogs)
+  - mkfs.exfat
+  - fsck.exfat
+  - exfatlabel
+
+  # F2FS filesystems (f2fs-tools)
+  - mkfs.f2fs
+  - fsck.f2fs
+
+  # Btrfs filesystems (btrfs-progs)
+  - btrfs
+  - mkfs.btrfs

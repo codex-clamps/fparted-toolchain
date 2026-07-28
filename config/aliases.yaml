@@ -1,0 +1,16 @@
+# Package alias resolution for fparted-toolchain.
+# Maps user-facing names to canonical build targets.
+# See PLAN.md §3.4 for the full alias table.
+
+aliases:
+  btrfs-progs: btrfs-progs
+  dosfstools: dosfstools
+  e2fsprogs: e2fsprogs
+  erofs-utils: erofs-utils
+  f2fs-tools: f2fs-tools
+  hfsprogs: hfsprogs
+  jfsutils: jfsutils
+  ntfsprogs-plus: ntfsprogs-plus
+  squashfs-tools: squashfs-tools
+  xfsprogs: xfsprogs
+  libisofs: libisofs

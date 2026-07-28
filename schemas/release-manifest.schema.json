@@ -1,0 +1,103 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://fparted.shadichy.vn/schemas/release-manifest.schema.json",
+  "title": "FPARTED Release Manifest",
+  "description": "Schema for Repo A release manifests published to GitHub releases.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "toolchain_version",
+    "termux_commit",
+    "package_id",
+    "prefix",
+    "min_android_api",
+    "app_compatibility",
+    "assets",
+    "required_binaries"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "toolchain_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "termux_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "package_id": {
+      "type": "string",
+      "const": "vn.shadichy.parted"
+    },
+    "prefix": {
+      "type": "string",
+      "const": "/data/data/vn.shadichy.parted/files"
+    },
+    "min_android_api": {
+      "type": "integer",
+      "minimum": 24
+    },
+    "app_compatibility": {
+      "type": "object",
+      "required": ["application_id", "abi"],
+      "properties": {
+        "application_id": {
+          "type": "string",
+          "const": "vn.shadichy.parted"
+        },
+        "abi": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["arm64-v8a", "armeabi-v7a", "x86", "x86_64"]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "assets": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^(arm64-v8a|armeabi-v7a|x86|x86_64)$": {
+          "type": "object",
+          "required": ["url", "name", "size", "sha256"],
+          "properties": {
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^fparted-rootfs-.*-(arm64-v8a|armeabi-v7a|x86|x86_64)\\.zip$"
+            },
+            "size": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "required_binaries": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,33 @@
+---
+description: "Custom Termux prefix patch for fparted"
+# Replace standard Termux prefix with fparted custom prefix
+# Must produce builds that never contain /data/data/com.termux or /files/usr
+
+# This patch overrides TERMUX_PREFIX and related build variables
+# so that all binaries and libraries install under:
+#   /data/data/vn.shadichy.parted/files
+--- a/build/setup-termux.sh
++++ b/build/setup-termux.sh
+@@ -1,6 +1,6 @@
+ export TERMUX_PREFIX="/data/data/vn.shadichy.parted/files"
+ export TERMUX_HOME="/data/data/vn.shadichy.parted/files/home"
+-export TERMUX_HOSTNAME="localhost"
++export TERMUX_HOSTNAME="fparted"
+ export TERMUX_ANDROID_ROOT="/system"
+ export TERMUX_ANDROID_DATA="/data"
+ 
+--- a/build/build-order.sh
++++ b/build/build-order.sh
+@@ -10,6 +10,10 @@
+ # Ensure no com.termux artifacts leak into the build
+ export TERMUX_APP_PACKAGE_NAME="vn.shadichy.parted"
+ export TERMUX_APP__DATA_DIR="/data/data/vn.shadichy.parted"
++export TERMUX__ROOTFS="/data/data/vn.shadichy.parted/files"
++export TERMUX__PREFIX="/data/data/vn.shadichy.parted/files"
++export TERMUX__PREFIX_SUBDIR=""
++export __TERMUX_BUILD_PROPS__VALIDATE_TERMUX_PREFIX_USR_MERGE_FORMAT=false
+
+ # Forbidden paths in built artifacts
+ FORBIDDEN_PATHS=(
+ 	"/data/data/com.termux"
+ 	"/data/data/vn.shadichy.parted/files/usr"

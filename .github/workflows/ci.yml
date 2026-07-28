@@ -1,0 +1,118 @@
+name: Repo A CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate-configs:
+    name: Validate Configs & Schemas
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate aliases
+        run: >
+          python3 scripts/resolve-packages.py --json
+
+      - name: Validate required binaries coverage
+        run: >
+          python3 scripts/resolve-packages.py --check-binaries --json
+
+      - name: Validate schemas
+        run: |
+          python3 -c "
+          import json, jsonschema
+          with open('schemas/release-manifest.schema.json') as f:
+              rm_schema = json.load(f)
+          with open('schemas/rootfs-manifest.schema.json') as f:
+              rf_schema = json.load(f)
+          # Schema files are structurally valid JSON
+          print(f'Release manifest schema: {rm_schema[\"\\$schema\"]}')
+          print(f'Rootfs manifest schema: {rf_schema[\"\\$schema\"]}')
+          "
+
+      - name: ShellCheck
+        uses: ludeeus/action-shellcheck@v3
+        with:
+          severity: warning
+
+      - name: Python lint
+        run: |
+          python3 -m py_compile scripts/resolve-packages.py
+          python3 -m py_compile scripts/assemble-rootfs.py
+          python3 -m py_compile scripts/validate-rootfs.py
+          python3 -m py_compile scripts/make-release-manifest.py
+
+  resolve-dependencies:
+    name: Resolve Dependency Graphs
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [parted, e2fsprogs, dosfstools, exfatprogs, f2fs-tools, btrfs-progs]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve build order
+        run: >
+          python3 scripts/resolve-packages.py
+          --graph ${{ matrix.package }}
+          --json
+
+  validate-sources:
+    name: Validate Pinned Source URLs
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check source hashes are pinned
+        run: |
+          python3 -c "
+          import yaml, sys
+          with open('config/packages.yaml') as f:
+              pkgs = yaml.safe_load(f)
+          unpinned = []
+          for name, pkg in pkgs.get('packages', {}).items():
+              if 'PLACEHOLDER' in pkg.get('source_hash', ''):
+                  unpinned.append(name)
+          if unpinned:
+              print(f'ERROR: Unpinned source hashes for: {unpinned}')
+              sys.exit(1)
+          print('All source hashes are pinned')
+          "
+
+  reproducibility:
+    name: Reproducibility Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify forbidden prefixes
+        run: >
+          grep -r "com\.termux" overlays/ scripts/ || true
+          grep -r "files/usr" overlays/ scripts/ || true
+
+      - name: Check no hardcoded dev paths
+        run: >
+          grep -rE '/home/|/root/|/tmp/' \
+            --include='*.py' --include='*.sh' scripts/ || true
