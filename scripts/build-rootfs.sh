@@ -113,9 +113,9 @@ export __TERMUX_BUILD_PROPS__VALIDATE_TERMUX_PREFIX_USR_MERGE_FORMAT=false
 # Note: In production, this uses the Termux build infrastructure
 # (docker containers or local NDK setup)
 REQUIRED_BINS=$(python3 -c "
-import json
+import sys, yaml
 with open('${CONFIG_DIR}/required-binaries.yaml') as f:
-    data = json.load(f)
+    data = yaml.safe_load(f)
 for b in data.get('required_binaries', []):
     print(b)
 ")
