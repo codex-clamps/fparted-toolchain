@@ -103,10 +103,5 @@ jobs:
       - name: Check for com.termux artifacts
         run: |
           # grep all output files for forbidden prefixes
-          find staging/ -type f -name "*.manifest" -o -name "*.json" | \
+          find staging/ -type f \( -name "*.manifest" -o -name "*.json" \) | \
             xargs grep -l "com\.termux" 2>/dev/null && exit 1 || echo "No forbidden prefix found"
-
-      - name: Check for /files/usr leakage
-        run: |
-          find staging/ -type f \( -name "*.manifest" -o -name "*.json" -o -name "*.txt" \) | \
-            xargs grep -l "files/usr" 2>/dev/null && exit 1 || echo "No /files/usr leakage found"

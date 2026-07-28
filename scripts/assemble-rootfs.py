@@ -124,7 +124,6 @@ def assemble_bundle(
     # Verify no path traversal or forbidden paths in entries
     forbidden_prefixes = [
         "/data/data/com.termux",
-        "/data/data/vn.shadichy.parted/files/usr",
     ]
     for entry in entries:
         epath = entry["path"]

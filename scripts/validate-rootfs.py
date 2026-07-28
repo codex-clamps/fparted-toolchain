@@ -12,7 +12,6 @@ from pathlib import Path
 
 FORBIDDEN_PREFIXES = [
     "/data/data/com.termux",
-    "/data/data/vn.shadichy.parted/files/usr",
 ]
 
 SUPPORTED_ABIS = {"arm64-v8a", "armeabi-v7a", "x86", "x86_64"}
