@@ -32,16 +32,16 @@ jobs:
 
       - name: Validate schemas
         run: |
-          python3 -c "
+          python3 << 'EOF'
           import json
           with open('schemas/release-manifest.schema.json') as f:
               rm_schema = json.load(f)
           with open('schemas/rootfs-manifest.schema.json') as f:
               rf_schema = json.load(f)
           # Schema files are structurally valid JSON
-          print(f'Release manifest schema: {rm_schema[\"\\$schema\"]}')
-          print(f'Rootfs manifest schema: {rf_schema[\"\\$schema\"]}')
-          "
+          print(f'Release manifest schema: {rm_schema["$schema"]}')
+          print(f'Rootfs manifest schema: {rf_schema["$schema"]}')
+          EOF
 
       - name: ShellCheck
         run: shellcheck --severity=warning scripts/*.sh 2>/dev/null || true
