@@ -47,7 +47,7 @@
               "pattern": "^(\\.\\./|/)"
             },
             "not": {
-              "contains": "\x00"
+              "contains": "\u0000"
             }
           },
           "type": {
