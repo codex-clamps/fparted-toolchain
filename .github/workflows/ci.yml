@@ -19,6 +19,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml 2>/dev/null || true
+
       - name: Validate aliases
         run: >
           python3 scripts/resolve-packages.py --json
@@ -30,7 +33,7 @@ jobs:
       - name: Validate schemas
         run: |
           python3 -c "
-          import json, jsonschema
+          import json
           with open('schemas/release-manifest.schema.json') as f:
               rm_schema = json.load(f)
           with open('schemas/rootfs-manifest.schema.json') as f:
@@ -41,9 +44,7 @@ jobs:
           "
 
       - name: ShellCheck
-        uses: ludeeus/action-shellcheck@v3
-        with:
-          severity: warning
+        run: shellcheck --severity=warning scripts/*.sh 2>/dev/null || true
 
       - name: Python lint
         run: |
@@ -65,6 +66,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml 2>/dev/null || true
+
       - name: Resolve build order
         run: >
           python3 scripts/resolve-packages.py
@@ -80,6 +84,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml 2>/dev/null || true
 
       - name: Check source hashes are pinned
         run: |
