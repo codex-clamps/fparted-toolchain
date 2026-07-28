@@ -57,7 +57,7 @@
           "mode": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 0o7777
+            "maximum": 4095
           },
           "sha256": {
             "type": "string",
