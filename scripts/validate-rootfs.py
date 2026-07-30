@@ -14,7 +14,7 @@ FORBIDDEN_PREFIXES = [
     "/data/data/com.termux",
 ]
 
-SUPPORTED_ABIS = {"arm64-v8a", "armv7a", "i686", "x86_64"}
+SUPPORTED_ABIS = {"arm64-v8a", "armeabi-v7a", "i686", "x86_64"}
 
 REQUIRED_BINARIES = [
     "parted", "blkid", "dd", "test",
@@ -131,7 +131,7 @@ def validate_required_binaries(zip_path: Path) -> list[str]:
 
     with zipfile.ZipFile(zip_path) as zf:
         for name in zf.namelist():
-            if name.startswith("bin/") and not name.endswith("/"):
+            if (name.startswith("usr/bin/") or name.startswith("bin/")) and not name.endswith("/"):
                 basename = os.path.basename(name)
                 found_binaries.add(basename)
 
@@ -206,11 +206,6 @@ def validate_hashes(zip_path: Path) -> list[str]:
                 errors.append(f"Error verifying {rel_path}: {e}")
 
     return errors
-
-
-def shuffle_which(cmd: str) -> str | None:
-    """Check if a command exists in PATH."""
-    return shutil_which(cmd)
 
 
 def shutil_which(cmd: str) -> str | None:

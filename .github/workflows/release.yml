@@ -18,7 +18,7 @@ jobs:
         include:
           - abi: arm64-v8a
             termux-arch: aarch64
-          - abi: armv7a
+          - abi: armeabi-v7a
             termux-arch: arm
           - abi: i686
             termux-arch: i686
@@ -56,7 +56,7 @@ jobs:
       - name: Validate bundle
         run: |
           BUNDLE=$(find staging/${{ matrix.abi }} -name "*.zip" | head -1)
-          python3 scripts/validate-rootfs.py --bundle "${BUNDLE}" --strict || true
+          python3 scripts/validate-rootfs.py --bundle "${BUNDLE}" --strict
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -146,7 +146,7 @@ jobs:
         id: bundle
         run: |
           BUNDLE=$(find /tmp/fparted-test -name "*.zip" | head -1)
-          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)arm64-v8a|armv7a|i686|x86_64')
+          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)(?:arm64-v8a|armeabi-v7a|i686|x86_64)')
           echo "bundle=${BUNDLE}" >> $GITHUB_OUTPUT
           echo "abi=${ABI}" >> $GITHUB_OUTPUT
 

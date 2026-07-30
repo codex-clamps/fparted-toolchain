@@ -23,7 +23,7 @@ jobs:
         include:
           - abi: arm64-v8a
             termux-arch: aarch64
-          - abi: armv7a
+          - abi: armeabi-v7a
             termux-arch: arm
           - abi: i686
             termux-arch: i686
@@ -40,7 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install pyyaml 2>/dev/null || true
+          python3 -m pip install pyyaml
 
       - name: Resolve termux commit from lock file
         id: lock
@@ -61,13 +61,16 @@ jobs:
           TERMUX_APP__PACKAGE_NAME: vn.shadichy.parted
           TERMUX__ROOTFS: /data/data/vn.shadichy.parted/files
           TERMUX__PREFIX: /data/data/vn.shadichy.parted/files
+          TERMUX_PREFIX: /data/data/vn.shadichy.parted/files
+          TERMUX_PREFIX_SUBDIR: ""
+          ANDROID_ROOT: /system
 
       - name: Validate bundle
         run: |
           python3 scripts/validate-rootfs.py \
             --bundle staging/${{ matrix.abi }}/fparted-rootfs-*.zip \
             --manifest staging/${{ matrix.abi }}/rootfs-manifest.json \
-            --strict || true
+            --strict
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -87,7 +90,7 @@ jobs:
 
       - name: Verify all ABI artifacts exist
         run: |
-          for abi in arm64-v8a armv7a i686 x86_64; do
+          for abi in arm64-v8a armeabi-v7a i686 x86_64; do
             echo "Checking ${abi}..."
             # In production, check that all ABI artifacts were produced
           done

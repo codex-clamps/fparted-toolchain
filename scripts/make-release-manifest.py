@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import subprocess
 from datetime import datetime, timezone
@@ -51,12 +52,15 @@ def generate_release_manifest(
     assets = {}
     for b in bundles:
         # Extract ABI from filename: fparted-rootfs-<version>-<abi>.zip
+        # ABIs with hyphens (arm64-v8a, armeabi-v7a) must be matched as a whole.
         name = b["name"]
         abi = "unknown"
-        parts = name.replace(".zip", "").split("-")
-        if len(parts) >= 2:
-            abi = parts[-1]
+        abi_match = re.search(r"-(arm64-v8a|armeabi-v7a|i686|x86_64)$", name.replace(".zip", ""))
+        if abi_match:
+            abi = abi_match.group(1)
 
+        if abi in assets:
+            print(f"WARNING: duplicate ABI {abi}, overwriting")
         assets[abi] = {
             "url": f"https://github.com/codex-clamps/fparted-toolchain/releases/download/v{toolchain_version}/{name}",
             "name": name,
@@ -96,8 +100,7 @@ def generate_spdx(bundles: list[dict], toolchain_version: str) -> dict:
             "SPDXID": f"SPDXRef-Bundle-{b['name']}",
             "name": b["name"],
             "downloadLocation": f"https://github.com/codex-clamps/fparted-toolchain/releases/download/v{toolchain_version}/{b['name']}",
-            "filesAnalyzed": True,
-            "contentUrl": f"{b['path']}",
+            "filesAnalyzed": False,
             "shasum": f"SHA-256:{b['sha256']}",
             "licenseConcluded": "GPL-2.0",
             "licenseDeclared": "GPL-2.0",
@@ -116,7 +119,7 @@ def generate_spdx(bundles: list[dict], toolchain_version: str) -> dict:
     }
 
 
-def sign_manifest(manifest: dict, output_path: Path) -> bool:
+def sign_manifest(manifest: dict, output_path: Path, manifest_path: Path | None = None) -> bool:
     """Sign the manifest with a GPG key. Returns True on success."""
     # Try GPG signing (requires GPG key in agent)
     try:
@@ -129,9 +132,13 @@ def sign_manifest(manifest: dict, output_path: Path) -> bool:
         return result.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
         # GPG not available or timed out — write placeholder
+        if manifest_path and manifest_path.exists():
+            manifest_hash = compute_file_hash(manifest_path)
+        else:
+            manifest_hash = hashlib.sha256(json.dumps(manifest, sort_keys=True, indent=2).encode()).hexdigest()
         output_path.write_text(
             f"# Signature placeholder — gpg signing not available\n"
-            f"# Manifest SHA-256: {hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()}\n"
+            f"# Manifest SHA-256: {manifest_hash}\n"
         )
         return False
 
@@ -177,7 +184,7 @@ def main():
     # Sign manifest if requested
     sig_path = output_dir / "release-manifest.sig"
     if args.sign:
-        sign_manifest(manifest, sig_path)
+        sign_manifest(manifest, sig_path, manifest_path)
 
     # Write SHA256SUMS
     sums_path = output_dir / "SHA256SUMS"

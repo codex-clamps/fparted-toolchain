@@ -20,7 +20,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: python3 -m pip install pyyaml 2>/dev/null || true
+        run: python3 -m pip install pyyaml
 
       - name: Validate aliases
         run: >
@@ -67,7 +67,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: python3 -m pip install pyyaml 2>/dev/null || true
+        run: python3 -m pip install pyyaml
 
       - name: Resolve build order
         run: >
@@ -86,7 +86,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: python3 -m pip install pyyaml 2>/dev/null || true
+        run: python3 -m pip install pyyaml
 
       - name: Check source hashes are pinned
         run: |

@@ -28,28 +28,42 @@ def compute_sha256(path: Path) -> str:
 
 def classify_entry(rel_path: str) -> str:
     """Classify an entry as mutable or immutable."""
-    # Binaries and libraries are immutable
-    if rel_path.startswith("bin/") or rel_path.startswith("lib/"):
+    # Binaries and libraries are immutable (check usr/ paths first, then bin/ lib/ fallback)
+    if rel_path.startswith("usr/bin/") or rel_path.startswith("usr/lib/") or \
+       rel_path.startswith("bin/") or rel_path.startswith("lib/"):
         return "immutable"
-    # Home, tmp, and logs are mutable
+    # Home and tmp are mutable
     if rel_path.startswith("home/") or rel_path.startswith("tmp/"):
         return "mutable"
     return "immutable"
+
+
+def _walk_rootfs(rootfs_dir: Path) -> list[Path]:
+    """Walk rootfs directory including dotfiles, returning all entry paths."""
+    entries = []
+    for dirpath, _dirnames, filenames in os.walk(rootfs_dir, followlinks=False):
+        for name in filenames:
+            entries.append(Path(dirpath) / name)
+    return entries
 
 
 def collect_entries(rootfs_dir: Path, prefix: str = "") -> list[dict]:
     """Walk rootfs directory and collect all entries for the manifest."""
     entries = []
 
-    for entry_path in sorted(rootfs_dir.rglob("*")):
+    for entry_path in sorted(_walk_rootfs(rootfs_dir)):
         if not entry_path.is_absolute():
             continue
 
         rel = entry_path.relative_to(rootfs_dir)
         rel_str = str(rel)
 
-        if rel_str.startswith(prefix):
-            rel_str = rel_str[len(prefix):].lstrip("/")
+        # Strip the configurable prefix from the relative path.
+        # rel_str has no leading / (e.g. "data/data/vn.shadichy.parted/files/usr/bin/parted")
+        # prefix has a leading / (e.g. "/data/data/vn.shadichy.parted/files").
+        strippable = prefix.lstrip("/")
+        if strippable and rel_str.startswith(strippable):
+            rel_str = rel_str[len(strippable):].lstrip("/")
 
         if not rel_str:
             continue
@@ -94,9 +108,10 @@ def assemble_bundle(
     abi: str,
     toolchain_version: str,
     termux_commit: str,
+    prefix: str = "/data/data/vn.shadichy.parted/files",
 ) -> dict:
     """Assemble the rootfs bundle and return the manifest."""
-    entries = collect_entries(rootfs_dir)
+    entries = collect_entries(rootfs_dir, prefix=prefix)
 
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -133,16 +148,25 @@ def assemble_bundle(
             raise ValueError(f"Path traversal detected: {epath}")
         if "\x00" in epath:
             raise ValueError(f"NUL character in path: {epath}")
+        abs_epath = prefix.rstrip("/") + "/" + epath
         for forbidden in forbidden_prefixes:
-            if forbidden in epath:
+            if forbidden in abs_epath:
                 raise ValueError(f"Forbidden prefix in rootfs entry: {epath}")
 
     with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for entry_path in sorted(rootfs_dir.rglob("*")):
-            if not entry_path.is_file():
-                continue
+        for entry_path in sorted(_walk_rootfs(rootfs_dir)):
             arcname = str(entry_path.relative_to(rootfs_dir))
-            zf.write(entry_path, arcname)
+            # Strip prefix from arcname, same as collect_entries
+            strippable = prefix.lstrip("/")
+            if strippable and arcname.startswith(strippable):
+                arcname = arcname[len(strippable):].lstrip("/")
+            if entry_path.is_symlink():
+                link_target = os.readlink(entry_path)
+                info = zipfile.ZipInfo(arcname)
+                info.external_attr = entry_path.lstat().st_mode << 16
+                zf.writestr(info, link_target)
+            elif entry_path.is_file():
+                zf.write(entry_path, arcname)
         # Also embed the manifest in the bundle
         zf.writestr("rootfs-manifest.json", json.dumps(manifest, indent=2, sort_keys=True))
 
@@ -161,6 +185,8 @@ def main():
     parser.add_argument("--abi", required=True, help="Target Android ABI (arm64-v8a, armv7a, i686, x86_64)")
     parser.add_argument("--toolchain-version", default="1.0.0", help="Toolchain version string")
     parser.add_argument("--termux-commit", required=True, help="Pinned termux/termux-packages commit")
+    parser.add_argument("--prefix", default="/data/data/vn.shadichy.parted/files",
+                        help="Rootfs prefix to strip from archive paths")
     parser.add_argument("--json", action="store_true", help="Output JSON manifest")
     args = parser.parse_args()
 
@@ -175,6 +201,7 @@ def main():
         args.abi,
         args.toolchain_version,
         args.termux_commit,
+        prefix=args.prefix,
     )
 
     if args.json:
