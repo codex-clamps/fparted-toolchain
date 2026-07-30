@@ -165,11 +165,19 @@ with open('repo.json', 'w') as f:
         docker pull ghcr.io/termux/package-builder
 
         echo "  Building ${#NEED_BUILD[@]} package(s): ${NEED_BUILD[*]}"
+
+        # Determine Docker security options based on environment.
+        # GHA runners need --privileged for FUSE; local builds use minimal caps.
+        if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
+            DOCKER_SECURITY_OPTS="--privileged"
+            echo "  (detected GHA runner, using --privileged for FUSE)"
+        else
+            DOCKER_SECURITY_OPTS="--cap-add SYS_ADMIN --cap-add DAC_READ_SEARCH --device /dev/fuse"
+        fi
+
         set +e
         docker run --rm \
-            --cap-add SYS_ADMIN \
-            --cap-add DAC_READ_SEARCH \
-            --device /dev/fuse \
+            ${DOCKER_SECURITY_OPTS} \
             -e ANDROID_ROOT=/system \
             -e TERMUX_TOPDIR=/home/builder/.termux-build \
             --volume "${CHECKOUT_DIR}:/home/builder/termux-packages" \
