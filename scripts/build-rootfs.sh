@@ -228,6 +228,8 @@ cd "${REPO_ROOT}"
 # --- Step 4: Extract runtime payloads into staging rootfs ---
 echo "[4/6] Extracting runtime payloads into rootfs staging directory ..."
 ROOTFS_DIR="${STAGING_DIR}/rootfs"
+mkdir -p "${ROOTFS_DIR}/usr/bin"
+mkdir -p "${ROOTFS_DIR}/usr/lib"
 mkdir -p "${ROOTFS_DIR}/bin"
 mkdir -p "${ROOTFS_DIR}/lib"
 mkdir -p "${ROOTFS_DIR}/home"
@@ -255,7 +257,7 @@ if [[ -d "${BUILD_OUTPUT_DIR}" ]]; then
     done
     find "${ROOTFS_DIR}/include" -type d -empty -delete 2>/dev/null || true
     echo "  Extracted ${pkg_count} packages into ${ROOTFS_DIR}"
-    echo "  Rootfs contents: bin/ has $(ls "${ROOTFS_DIR}/bin/" 2>/dev/null | wc -l) entries, lib/ has $(ls "${ROOTFS_DIR}/lib/" 2>/dev/null | wc -l) entries"
+    echo "  Rootfs contents: usr/bin/ has $(ls "${ROOTFS_DIR}/usr/bin/" "${ROOTFS_DIR}/bin/" 2>/dev/null | wc -l) entries"
 else
     echo "  WARNING: Build output directory not found at ${BUILD_OUTPUT_DIR}"
     echo "  Rootfs will be empty"
@@ -277,7 +279,6 @@ if [[ -d "${COMTERMUX_DIR}" ]]; then
     # Fix shebangs and embedded com.termux paths in text files
     if command -v python3 &>/dev/null; then
         find "${VN_PREFIX}" -type f -exec grep -l 'com\.termux' {} \; 2>/dev/null | while read -r f; do
-            # Only fix text files (skip ELF and other binaries)
             if file "${f}" | grep -qE 'text|script|ASCII|UTF-8'; then
                 python3 -c "
 p = '${f}'
@@ -290,7 +291,6 @@ with open(p, 'w') as fh:
             fi
         done
     fi
-    # Remove the old com.termux tree
     rm -rf "${COMTERMUX_DIR}"
     echo "  [migrate] Done. Removed old com.termux tree."
 fi
@@ -298,14 +298,12 @@ fi
 # --- Step 5: Recreate modes, symlinks, and verify hashes ---
 echo "[5/6] Normalizing permissions and verifying integrity ..."
 
-# Set deterministic permissions
 find "${ROOTFS_DIR}" -type d -exec chmod 755 {} \; 2>/dev/null || true
 find "${ROOTFS_DIR}" -type f -exec chmod 644 {} \; 2>/dev/null || true
-find "${ROOTFS_DIR}/bin" -type f -executable 2>/dev/null | while read -r f; do
+find "${ROOTFS_DIR}/usr/bin" "${ROOTFS_DIR}/bin" -type f -executable 2>/dev/null | while read -r f; do
     chmod 755 "${f}"
 done
 
-# Verify ELF artifacts
 echo "(ELF validation step: verify architecture and Bionic linkage)"
 
 # --- Step 6: Generate rootfs-manifest.json and bundle ---
@@ -315,7 +313,7 @@ python3 "${SCRIPT_DIR}/assemble-rootfs.py" \
     --rootfs-dir "${ROOTFS_DIR}" \
     --output "${STAGING_DIR}" \
     --termux-commit "${TERMUX_COMMIT}" \
-    --prefix /data/data/vn.shadichy.parted/files
+    --prefix /data/data/vn.shadichy.parted/files/usr
 
 echo "=== Build complete ==="
 echo "  Output: ${STAGING_DIR}/rootfs-manifest.json"

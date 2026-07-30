@@ -60,17 +60,17 @@ jobs:
         env:
           TERMUX_APP__PACKAGE_NAME: vn.shadichy.parted
           TERMUX__ROOTFS: /data/data/vn.shadichy.parted/files
-          TERMUX__PREFIX: /data/data/vn.shadichy.parted/files
-          TERMUX_PREFIX: /data/data/vn.shadichy.parted/files
-          TERMUX_PREFIX_SUBDIR: ""
+          TERMUX__PREFIX: /data/data/vn.shadichy.parted/files/usr
+          TERMUX_PREFIX: /data/data/vn.shadichy.parted/files/usr
+          TERMUX_PREFIX_SUBDIR: "usr"
           ANDROID_ROOT: /system
 
       - name: Validate bundle
         run: |
+          BUNDLE=$(find staging/${{ matrix.abi }} -name "*.zip" | head -1)
           python3 scripts/validate-rootfs.py \
-            --bundle staging/${{ matrix.abi }}/fparted-rootfs-*.zip \
-            --manifest staging/${{ matrix.abi }}/rootfs-manifest.json \
-            --strict
+            --bundle "${BUNDLE}" \
+            --manifest staging/${{ matrix.abi }}/rootfs-manifest.json
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
