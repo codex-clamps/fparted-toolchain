@@ -185,7 +185,7 @@ def main():
     parser.add_argument("--abi", required=True, help="Target Android ABI (arm64-v8a, armv7a, i686, x86_64)")
     parser.add_argument("--toolchain-version", default="1.0.0", help="Toolchain version string")
     parser.add_argument("--termux-commit", required=True, help="Pinned termux/termux-packages commit")
-    parser.add_argument("--prefix", default="/data/data/vn.shadichy.parted/files/usr",
+    parser.add_argument("--prefix", default="/data/data/vn.shadichy.parted/files",
                         help="Rootfs prefix to strip from archive paths")
     parser.add_argument("--json", action="store_true", help="Output JSON manifest")
     args = parser.parse_args()

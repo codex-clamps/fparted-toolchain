@@ -313,7 +313,7 @@ python3 "${SCRIPT_DIR}/assemble-rootfs.py" \
     --rootfs-dir "${ROOTFS_DIR}" \
     --output "${STAGING_DIR}" \
     --termux-commit "${TERMUX_COMMIT}" \
-    --prefix /data/data/vn.shadichy.parted/files/usr
+    --prefix /data/data/vn.shadichy.parted/files
 
 echo "=== Build complete ==="
 echo "  Output: ${STAGING_DIR}/rootfs-manifest.json"
