@@ -67,7 +67,7 @@ jobs:
 
       - name: Validate bundle
         run: |
-          BUNDLE=$(find staging/${{ matrix.abi }} -name "*.zip" | head -1)
+          BUNDLE=$(find staging/${{ matrix.abi }} -name "fparted-rootfs-*.zip" | head -1)
           python3 scripts/validate-rootfs.py \
             --bundle "${BUNDLE}" \
             --manifest staging/${{ matrix.abi }}/rootfs-manifest.json

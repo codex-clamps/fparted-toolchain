@@ -55,7 +55,7 @@ jobs:
 
       - name: Validate bundle
         run: |
-          BUNDLE=$(find staging/${{ matrix.abi }} -name "*.zip" | head -1)
+          BUNDLE=$(find staging/${{ matrix.abi }} -name "fparted-rootfs-*.zip" | head -1)
           python3 scripts/validate-rootfs.py --bundle "${BUNDLE}"
 
       - name: Upload artifact
@@ -146,7 +146,7 @@ jobs:
       - name: Find latest release bundle
         id: bundle
         run: |
-          BUNDLE=$(find /tmp/fparted-test -name "*.zip" | head -1)
+          BUNDLE=$(find /tmp/fparted-test -name "fparted-rootfs-*.zip" | head -1)
           ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)(?:arm64-v8a|armeabi-v7a|i686|x86_64)')
           echo "bundle=${BUNDLE}" >> $GITHUB_OUTPUT
           echo "abi=${ABI}" >> $GITHUB_OUTPUT
