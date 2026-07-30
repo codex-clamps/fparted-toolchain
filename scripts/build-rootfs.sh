@@ -193,12 +193,13 @@ with open('repo.json', 'w') as f:
             echo "  Some packages may have failed. Continuing with available packages..."
         fi
 
-        # Collect all built packages from the Termux build tree (including dependencies).
-        # The -o /output flag only copies top-level requested packages; dependency
-        # packages (e.g., util-linux, zlib) remain in the internal build tree.
-        echo "  Collecting all built packages from build cache..."
-        if [[ -d "${TERMUX_BUILD_CACHE_DIR}" ]]; then
-            find "${TERMUX_BUILD_CACHE_DIR}" -name "*.pkg.tar.xz" -exec cp -n {} "${BUILD_OUTPUT_DIR}/" \;
+        # Collect dependency packages that landed in the default Termux output dir
+        # (CHECKOUT_DIR/output). The -o /output flag only applies to explicitly
+        # requested packages on the command line; dependencies are built via
+        # termux_run_build-package() which omits -o and uses the default dir.
+        if [[ -d "${CHECKOUT_DIR}/output" ]]; then
+            echo "  Collecting dependency packages from ${CHECKOUT_DIR}/output ..."
+            find "${CHECKOUT_DIR}/output" -name "*.pkg.tar.xz" -exec cp -n {} "${BUILD_OUTPUT_DIR}/" \;
             echo "  Collected $(find "${BUILD_OUTPUT_DIR}" -name '*.pkg.tar.xz' | wc -l) total packages"
         fi
     else
