@@ -186,8 +186,8 @@ with open('repo.json', 'w') as f:
         DOCKER_EXIT=$?
         set -e
         if [[ ${DOCKER_EXIT} -ne 0 ]]; then
-            echo "  WARNING: Docker build exited with code ${DOCKER_EXIT}"
-            echo "  Some packages may have failed. Continuing with available packages..."
+            echo "ERROR: Termux package build failed (exit code ${DOCKER_EXIT}). The rootfs is incomplete; refusing to continue. Check for source download failures (e.g. upstream CDN outages) and retry the build." >&2
+            exit "${DOCKER_EXIT}"
         fi
 
         # Collect dependency packages that landed in the default Termux output dir
