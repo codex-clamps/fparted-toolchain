@@ -1,7 +1,7 @@
 # fparted-toolchain — Complete Walkthrough
 
 ## Overview
-What this project is: A deterministic, reproducible rootfs builder for the fparted Android partition editor app. It produces signed, verified rootfs bundles for 4 Android ABIs.
+What this project is: A deterministic, reproducible rootfs builder for the fparted Android partition editor app. It produces signed, verified rootfs bundles for 2 Android ABIs (arm64-v8a, x86_64).
 
 ## The Problem We Solved
 - The fparted app needs a Linux toolchain on Android to run parted, e2fsprogs, dosfstools, etc.
@@ -64,8 +64,8 @@ Explain each directory:
 Single consolidated workflow replacing the former ci.yml, build.yml, release.yml, and build-abi.yml.
 Triggers on push to master, tag push (v*), PRs, and workflow_dispatch.
 - PR: x86_64-only smoke build + config/schema/shellcheck/reproducibility validation
-- Push to master: matrix build for all 4 ABIs (arm64-v8a, armeabi-v7a, i686, x86_64) + verify-all
-- Tag push (v*): 4-ABI build + release manifest/signing/SHA256SUMS assembly + draft GitHub release + smoke test
+- Push to master: matrix build for both ABIs (arm64-v8a, x86_64) + verify-all
+- Tag push (v*): 2-ABI build + release manifest/signing/SHA256SUMS assembly + draft GitHub release + smoke test
 - Each build job: checkout → setup Python → build rootfs → validate → upload artifact
 
 ## Build Results
@@ -107,7 +107,7 @@ Triggers on push to master, tag push (v*), PRs, and workflow_dispatch.
 
 ## Current Status
 - Last build completed: 2026-07-30
-- All 4 ABI builds running on GHA (in progress)
+- Both ABI builds running on GHA (in progress)
 - Release v0.2.0 tag created and pushed
 - 3/3 Repo A CI runs: ✅ success
 - 0/3 previous Build Rootfs runs: ❌ failure (FUSE + missing packages — should be fixed now)

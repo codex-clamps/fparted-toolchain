@@ -122,7 +122,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo 'include=[{"abi":"x86_64","termux-arch":"x86_64"}]' >> "$GITHUB_OUTPUT"
           else
-            echo 'include=[{"abi":"arm64-v8a","termux-arch":"aarch64"},{"abi":"armeabi-v7a","termux-arch":"arm"},{"abi":"i686","termux-arch":"i686"},{"abi":"x86_64","termux-arch":"x86_64"}]' >> "$GITHUB_OUTPUT"
+            echo 'include=[{"abi":"arm64-v8a","termux-arch":"aarch64"},{"abi":"x86_64","termux-arch":"x86_64"}]' >> "$GITHUB_OUTPUT"
           fi
 
   build:
@@ -183,7 +183,7 @@ jobs:
           retention-days: 30
 
   verify-all:
-    name: Verify All Four ABIs Present
+    name: Verify All ABIs Present
     needs: build
     if: github.event_name != 'pull_request' && github.ref_type == 'branch'
     runs-on: ubuntu-latest
@@ -192,9 +192,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Verify all four ABI bundles present
+      - name: Verify both ABI bundles present
         run: |
-          for abi in arm64-v8a armeabi-v7a i686 x86_64; do
+          for abi in arm64-v8a x86_64; do
             if [[ -f "artifacts/rootfs-${abi}/rootfs-${abi}.tar.gz" ]]; then
               echo "OK: ${abi}"
             else
@@ -256,8 +256,8 @@ jobs:
         run: |
           COUNT=$(find release-output -name "fparted-rootfs-*.zip" | wc -l)
           echo "Bundles in release: ${COUNT}"
-          if [ "${COUNT}" -ne 4 ]; then
-            echo "ERROR: Expected 4 ABI bundles, got ${COUNT}"
+          if [ "${COUNT}" -ne 2 ]; then
+            echo "ERROR: Expected 2 ABI bundles, got ${COUNT}"
             exit 1
           fi
       - name: Verify hashes
@@ -299,7 +299,7 @@ jobs:
         id: bundle
         run: |
           BUNDLE=$(find /tmp/fparted-test -name "fparted-rootfs-*.zip" | head -1)
-          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)(?:arm64-v8a|armeabi-v7a|i686|x86_64)')
+          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)(?:arm64-v8a|x86_64)')
           echo "bundle=${BUNDLE}" >> "$GITHUB_OUTPUT"
           echo "abi=${ABI}" >> "$GITHUB_OUTPUT"
       - name: Install toolchain to test device

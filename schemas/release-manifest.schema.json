@@ -52,7 +52,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["arm64-v8a", "armv7a", "i686", "x86_64"]
+            "enum": ["arm64-v8a", "x86_64"]
           },
           "minItems": 1
         }
@@ -62,7 +62,7 @@
       "type": "object",
       "minProperties": 1,
       "patternProperties": {
-        "^(arm64-v8a|armeabi-v7a|x86|x86_64)$": {
+        "^(arm64-v8a|x86_64)$": {
           "type": "object",
           "required": ["url", "name", "size", "sha256"],
           "properties": {
@@ -72,7 +72,7 @@
             },
             "name": {
               "type": "string",
-              "pattern": "^fparted-rootfs-.*-(arm64-v8a|armeabi-v7a|x86|x86_64)\\.zip$"
+              "pattern": "^fparted-rootfs-.*-(arm64-v8a|x86_64)\\.zip$"
             },
             "size": {
               "type": "integer",

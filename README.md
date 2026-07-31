@@ -19,7 +19,7 @@ This repository produces signed, verified rootfs bundles for each supported Andr
 ```text
 .
 ├── .github/workflows/
-│   └── ci.yml       # Single pipeline: PR validation + 4-ABI builds + verify-all + release assembly
+│   └── ci.yml       # Single pipeline: PR validation + 2-ABI builds + verify-all + release assembly
 ├── config/
 │   ├── packages.yaml          # Package definitions with source hashes, licenses
 │   ├── aliases.yaml           # User-facing name → canonical target mapping
@@ -80,8 +80,6 @@ python3 scripts/make-release-manifest.py \
 | Android ABI | Termux Architecture |
 | --- | --- |
 | `arm64-v8a` | `aarch64` |
-| `armeabi-v7a` | `arm` |
-| `x86` | `i686` |
 | `x86_64` | `x86_64` |
 
 ## Validation Gates

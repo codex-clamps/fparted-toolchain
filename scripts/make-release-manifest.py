@@ -52,10 +52,10 @@ def generate_release_manifest(
     assets = {}
     for b in bundles:
         # Extract ABI from filename: fparted-rootfs-<version>-<abi>.zip
-        # ABIs with hyphens (arm64-v8a, armeabi-v7a) must be matched as a whole.
+        # ABIs with hyphens (arm64-v8a, x86_64) must be matched as a whole.
         name = b["name"]
         abi = "unknown"
-        abi_match = re.search(r"-(arm64-v8a|armeabi-v7a|i686|x86_64)$", name.replace(".zip", ""))
+        abi_match = re.search(r"-(arm64-v8a|x86_64)$", name.replace(".zip", ""))
         if abi_match:
             abi = abi_match.group(1)
 
