@@ -8,10 +8,13 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-all:
-    name: Build All ABIs
-    runs-on: ubuntu-latest
+    name: Build ${{ matrix.abi }}
     strategy:
       fail-fast: false
       matrix:
@@ -24,61 +27,15 @@ jobs:
             termux-arch: i686
           - abi: x86_64
             termux-arch: x86_64
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Read termux lock
-        id: lock
-        run: |
-          COMMIT=$(python3 -c "
-          import json
-          with open('config/termux-lock.json') as f:
-              print(json.load(f)['pinned_termux_commit'])
-          ")
-          echo "termux_commit=${COMMIT}" >> $GITHUB_OUTPUT
-
-      - name: Install dependencies
-        run: |
-          python3 -m pip install pyyaml
-
-      - name: Build rootfs
-        run: |
-          bash scripts/build-rootfs.sh \
-            ${{ matrix.abi }} \
-            ${{ steps.lock.outputs.termux_commit }}
-
-      - name: Validate bundle
-        run: |
-          BUNDLE=$(find staging/${{ matrix.abi }} -name "fparted-rootfs-*.zip" | head -1)
-          python3 scripts/validate-rootfs.py --bundle "${BUNDLE}"
-
-      - name: Create artifact tarball
-        run: |
-          mkdir -p artifacts
-          tar -czf "artifacts/rootfs-${{ matrix.abi }}.tar.gz" \
-            -C "staging/${{ matrix.abi }}" \
-            --exclude='termux-checkout' \
-            --exclude='termux-build-cache' \
-            .
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rootfs-${{ matrix.abi }}
-          path: artifacts/rootfs-${{ matrix.abi }}.tar.gz
+    uses: ./.github/workflows/build-abi.yml
+    with:
+      abi: ${{ matrix.abi }}
+      termux-arch: ${{ matrix.termux-arch }}
 
   assemble-release:
     name: Assemble Release Assets
     runs-on: ubuntu-latest
     needs: build-all
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-
     steps:
       - uses: actions/checkout@v4
 
@@ -86,6 +43,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml
 
       - name: Download all ABI artifacts
         uses: actions/download-artifact@v4
@@ -110,12 +70,11 @@ jobs:
             --sign
 
       - name: Verify all required binaries present
-        run: |
-          python3 scripts/resolve-packages.py --check-binaries
+        run: python3 scripts/resolve-packages.py --check-binaries
 
       - name: Verify bundle count
         run: |
-          COUNT=$(find release-output -name "*.zip" | wc -l)
+          COUNT=$(find release-output -name "fparted-rootfs-*.zip" | wc -l)
           echo "Bundles in release: ${COUNT}"
           if [ "${COUNT}" -ne 4 ]; then
             echo "ERROR: Expected 4 ABI bundles, got ${COUNT}"
@@ -131,7 +90,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-output/*.zip
+            release-output/fparted-rootfs-*.zip
             release-output/release-manifest.json
             release-output/release-manifest.sig
             release-output/SHA256SUMS
@@ -145,8 +104,6 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     needs: assemble-release
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-
     steps:
       - uses: actions/checkout@v4
 
@@ -167,15 +124,14 @@ jobs:
         run: |
           BUNDLE=$(find /tmp/fparted-test -name "fparted-rootfs-*.zip" | head -1)
           ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)(?:arm64-v8a|armeabi-v7a|i686|x86_64)')
-          echo "bundle=${BUNDLE}" >> $GITHUB_OUTPUT
-          echo "abi=${ABI}" >> $GITHUB_OUTPUT
+          echo "bundle=${BUNDLE}" >> "$GITHUB_OUTPUT"
+          echo "abi=${ABI}" >> "$GITHUB_OUTPUT"
 
       - name: Install toolchain to test device
         run: |
           adb root
           adb push "${{ steps.bundle.outputs.bundle }}" /data/local/tmp/
-          # Install from bundle on device
-          # (implementation depends on device test harness)
+          # Install from bundle on device (device test harness)
 
       - name: Verify required binaries on device
         run: |

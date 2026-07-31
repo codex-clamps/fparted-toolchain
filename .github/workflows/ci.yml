@@ -43,8 +43,11 @@ jobs:
           print(f'Rootfs manifest schema: {rf_schema["$schema"]}')
           EOF
 
+      - name: Install ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
       - name: ShellCheck
-        run: shellcheck --severity=warning scripts/*.sh 2>/dev/null || true
+        run: shellcheck --severity=warning scripts/*.sh
 
       - name: Python lint
         run: |

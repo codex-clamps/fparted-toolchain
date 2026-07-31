@@ -7,16 +7,19 @@ on:
       - 'config/**'
       - 'patches/**'
       - 'scripts/**'
-
+      - '.github/workflows/**'
   pull_request:
     branches: [master]
-
   workflow_dispatch:
 
+concurrency:
+  group: build-rootfs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  matrix-build:
+  build-all:
     name: Build ${{ matrix.abi }}
-    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
     strategy:
       fail-fast: false
       matrix:
@@ -29,91 +32,51 @@ jobs:
             termux-arch: i686
           - abi: x86_64
             termux-arch: x86_64
+    uses: ./.github/workflows/build-abi.yml
+    with:
+      abi: ${{ matrix.abi }}
+      termux-arch: ${{ matrix.termux-arch }}
 
-    steps:
-      - uses: actions/checkout@v4
+  build-smoke:
+    name: Build x86_64 (PR smoke)
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/build-abi.yml
+    with:
+      abi: x86_64
+      termux-arch: x86_64
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: |
-          python3 -m pip install pyyaml
-
-      - name: Resolve termux commit from lock file
-        id: lock
-        run: |
-          COMMIT=$(python3 -c "
-          import json
-          with open('config/termux-lock.json') as f:
-              print(json.load(f)['pinned_termux_commit'])
-          ")
-          echo "termux_commit=${COMMIT}" >> $GITHUB_OUTPUT
-
-      - name: Build rootfs for ${{ matrix.abi }}
-        run: |
-          bash scripts/build-rootfs.sh \
-            ${{ matrix.abi }} \
-            ${{ steps.lock.outputs.termux_commit }}
-        env:
-          TERMUX_APP__PACKAGE_NAME: vn.shadichy.parted
-          TERMUX__ROOTFS: /data/data/vn.shadichy.parted/files
-          TERMUX__PREFIX: /data/data/vn.shadichy.parted/files/usr
-          TERMUX_PREFIX: /data/data/vn.shadichy.parted/files/usr
-          TERMUX_PREFIX_SUBDIR: "usr"
-          ANDROID_ROOT: /system
-
-      - name: Validate bundle
-        run: |
-          BUNDLE=$(find staging/${{ matrix.abi }} -name "fparted-rootfs-*.zip" | head -1)
-          python3 scripts/validate-rootfs.py \
-            --bundle "${BUNDLE}" \
-            --manifest staging/${{ matrix.abi }}/rootfs-manifest.json
-
-      - name: Create artifact tarball
-        run: |
-          mkdir -p artifacts
-          tar -czf "artifacts/rootfs-${{ matrix.abi }}.tar.gz" \
-            -C "staging/${{ matrix.abi }}" \
-            --exclude='termux-checkout' \
-            --exclude='termux-build-cache' \
-            .
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: rootfs-${{ matrix.abi }}
-          path: artifacts/rootfs-${{ matrix.abi }}.tar.gz
-          retention-days: 30
-
-  full-matrix-check:
+  verify-all:
     name: Verify All Four ABIs Present
+    needs: build-all
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    needs: matrix-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Download all ABI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-      - name: Verify all ABI artifacts exist
+      - name: Verify all four ABI bundles present
         run: |
           for abi in arm64-v8a armeabi-v7a i686 x86_64; do
-            echo "Checking ${abi}..."
-            # In production, check that all ABI artifacts were produced
+            if [[ -f "artifacts/rootfs-${abi}/rootfs-${abi}.tar.gz" ]]; then
+              echo "OK: ${abi}"
+            else
+              echo "ERROR: missing artifact for ${abi}"
+              exit 1
+            fi
           done
 
-  forbidden-prefix-check:
-    name: Forbid Standard Termux Prefix in Outputs
-    runs-on: ubuntu-latest
-    needs: matrix-build
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check for com.termux artifacts
+      - name: Forbid standard Termux prefix in outputs
         run: |
-          # grep all output files for forbidden prefixes
-          find staging/ -type f \( -name "*.manifest" -o -name "*.json" \) | \
-            xargs grep -l "com\.termux" 2>/dev/null && exit 1 || echo "No forbidden prefix found"
+          mkdir -p /tmp/prefix-check
+          for tarball in artifacts/*/*.tar.gz; do
+            tar -xzf "${tarball}" -C /tmp/prefix-check
+          done
+          if find /tmp/prefix-check -type f \
+              \( -name "*.json" -o -name "*.sh" -o -name "*.md" -o -name "*.txt" -o -name "*.py" \) \
+              -exec grep -l "com\.termux" {} + 2>/dev/null | grep -q .; then
+            echo "ERROR: forbidden com.termux prefix found"
+            exit 1
+          fi
+          echo "No forbidden prefix found"

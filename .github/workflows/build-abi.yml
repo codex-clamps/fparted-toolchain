@@ -1,0 +1,76 @@
+name: Build Rootfs ABI
+
+on:
+  workflow_call:
+    inputs:
+      abi:
+        description: Android ABI to build
+        required: true
+        type: string
+      termux-arch:
+        description: Termux architecture name
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-abi:
+    name: Build ${{ inputs.abi }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml
+
+      - name: Resolve termux commit from lock file
+        id: lock
+        run: |
+          python3 -c "
+          import json
+          with open('config/termux-lock.json') as f:
+              print(json.load(f)['pinned_termux_commit'])
+          " > /tmp/termux-commit.txt
+          echo "termux_commit=$(cat /tmp/termux-commit.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Build rootfs for ${{ inputs.abi }}
+        run: |
+          bash scripts/build-rootfs.sh "${{ inputs.abi }}" "${{ steps.lock.outputs.termux_commit }}"
+        env:
+          TERMUX_APP__PACKAGE_NAME: vn.shadichy.parted
+          TERMUX__ROOTFS: /data/data/vn.shadichy.parted/files
+          TERMUX__PREFIX: /data/data/vn.shadichy.parted/files/usr
+          TERMUX_PREFIX: /data/data/vn.shadichy.parted/files/usr
+          TERMUX_PREFIX_SUBDIR: "usr"
+          ANDROID_ROOT: /system
+
+      - name: Validate bundle
+        run: |
+          BUNDLE=$(find "staging/${{ inputs.abi }}" -name "fparted-rootfs-*.zip" | head -1)
+          python3 scripts/validate-rootfs.py \
+            --bundle "${BUNDLE}" \
+            --manifest "staging/${{ inputs.abi }}/rootfs-manifest.json"
+
+      - name: Create artifact tarball
+        run: |
+          mkdir -p artifacts
+          tar -czf "artifacts/rootfs-${{ inputs.abi }}.tar.gz" \
+            -C "staging/${{ inputs.abi }}" \
+            --exclude='termux-checkout' \
+            --exclude='termux-build-cache' \
+            .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-${{ inputs.abi }}
+          path: artifacts/rootfs-${{ inputs.abi }}.tar.gz
+          retention-days: 30
