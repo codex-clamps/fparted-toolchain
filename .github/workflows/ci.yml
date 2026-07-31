@@ -22,7 +22,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: python3 -m pip install pyyaml
+        run: python3 -m pip install pyyaml jsonschema
       - name: Validate aliases
         run: python3 scripts/resolve-packages.py --json
       - name: Validate required binaries coverage
@@ -31,12 +31,13 @@ jobs:
         run: |
           python3 << 'EOF'
           import json
-          with open('schemas/release-manifest.schema.json') as f:
-              rm_schema = json.load(f)
-          with open('schemas/rootfs-manifest.schema.json') as f:
-              rf_schema = json.load(f)
-          print(f'Release manifest schema: {rm_schema["$schema"]}')
-          print(f'Rootfs manifest schema: {rf_schema["$schema"]}')
+          from jsonschema import Draft7Validator
+          for schema_file in ('schemas/release-manifest.schema.json',
+                              'schemas/rootfs-manifest.schema.json'):
+              with open(schema_file) as f:
+                  schema = json.load(f)
+              Draft7Validator.check_schema(schema)
+              print(f'{schema_file}: valid draft-07 schema')
           EOF
       - name: Install ShellCheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
@@ -112,6 +113,7 @@ jobs:
 
   build-matrix:
     name: Compute Build Matrix
+    needs: validate-configs
     runs-on: ubuntu-latest
     outputs:
       include: ${{ steps.gen.outputs.include }}
@@ -174,6 +176,8 @@ jobs:
             -C "staging/${{ matrix.abi }}" \
             --exclude='termux-checkout' \
             --exclude='termux-build-cache' \
+            --exclude='rootfs' \
+            --exclude='packages' \
             .
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -230,7 +234,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install dependencies
-        run: python3 -m pip install pyyaml
+        run: python3 -m pip install pyyaml jsonschema
       - name: Download all ABI artifacts
         uses: actions/download-artifact@v4
         with:
@@ -260,7 +264,23 @@ jobs:
             --termux-commit "$(python3 -c "import json; print(json.load(open('config/termux-lock.json'))['pinned_termux_commit'])")" \
             --output-dir release-output \
             --sign
-      - name: Verify all required binaries present
+      - name: Verify release manifest signature
+        run: |
+          gpg --batch --import keys/release-pubkey.asc
+          gpg --verify release-output/release-manifest.sig release-output/release-manifest.json
+      - name: Validate generated release manifest
+        run: |
+          python3 << 'EOF'
+          import json
+          import jsonschema
+          with open('schemas/release-manifest.schema.json') as f:
+              schema = json.load(f)
+          with open('release-output/release-manifest.json') as f:
+              manifest = json.load(f)
+          jsonschema.validate(manifest, schema)
+          print('release-manifest.json validates against release-manifest.schema.json')
+          EOF
+      - name: Verify required binaries declared in config
         run: python3 scripts/resolve-packages.py --check-binaries
       - name: Verify bundle count
         run: |

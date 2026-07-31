@@ -46,7 +46,7 @@ def generate_release_manifest(
     bundles: list[dict],
     toolchain_version: str,
     termux_commit: str,
-    schema_version: str = "1.0",
+    schema_version: str = "1.1",
 ) -> dict:
     """Generate a release manifest from bundle metadata."""
     assets = {}
@@ -119,12 +119,65 @@ def generate_spdx(bundles: list[dict], toolchain_version: str) -> dict:
     }
 
 
+def get_release_key_fingerprint() -> str:
+    """Return the full fingerprint of the committed release signing key.
+
+    Derived from keys/release-pubkey.asc (the public half of the release
+    signing key; the private half lives only in the GPG_PRIVATE_KEY repository
+    secret). Pinning the full fingerprint -- rather than a short key ID --
+    avoids short-ID collisions and ensures we never sign with an arbitrary key
+    from the local keyring.
+    """
+    key_path = Path(__file__).resolve().parent.parent / "keys" / "release-pubkey.asc"
+    result = subprocess.run(
+        [
+            "gpg",
+            "--with-colons",
+            "--import-options",
+            "show-only",
+            "--import",
+            str(key_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        raise RuntimeError(
+            f"gpg failed to read release key {key_path}"
+            + (f" ({detail})" if detail else "")
+        )
+    for line in result.stdout.splitlines():
+        if line.startswith("fpr:"):
+            fields = line.split(":")
+            # Colon output: field 10 (1-indexed) carries the full fingerprint.
+            if len(fields) > 9 and fields[9]:
+                return fields[9]
+    raise RuntimeError(f"release public key {key_path} contains no fingerprint record")
+
+
 def sign_manifest(manifest: dict, output_path: Path) -> bool:
     """Sign the manifest with a GPG key. Returns True on success."""
     try:
         manifest_json = json.dumps(manifest, indent=2, sort_keys=True)
+        # Pin the signing key by the full fingerprint of the committed public
+        # key (keys/release-pubkey.asc) instead of letting gpg choose one.
+        fingerprint = get_release_key_fingerprint()
         result = subprocess.run(
-            ["gpg", "--detach-sign", "--armor", "--output", str(output_path)],
+            [
+                "gpg",
+                "--batch",
+                "--yes",
+                "--pinentry-mode",
+                "loopback",
+                "--local-user",
+                fingerprint,
+                "--detach-sign",
+                "--armor",
+                "--output",
+                str(output_path),
+            ],
             input=manifest_json,
             capture_output=True, text=True, timeout=30,
         )
@@ -140,6 +193,9 @@ def sign_manifest(manifest: dict, output_path: Path) -> bool:
         return True
     except FileNotFoundError:
         print("ERROR: gpg executable not found; cannot sign release manifest", file=sys.stderr)
+        return False
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         return False
     except subprocess.TimeoutExpired:
         print("ERROR: gpg signing timed out", file=sys.stderr)

@@ -18,7 +18,7 @@
   "properties": {
     "schema_version": {
       "type": "string",
-      "const": "1.0"
+      "const": "1.1"
     },
     "toolchain_version": {
       "type": "string",
@@ -84,7 +84,8 @@
             }
           }
         }
-      }
+      },
+      "additionalProperties": false
     },
     "required_binaries": {
       "type": "array",

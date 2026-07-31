@@ -154,7 +154,7 @@ with open('repo.json', 'w') as f:
     if [[ -d "${REPO_ROOT}/config/overlay-packages" ]]; then
         mkdir -p "${CHECKOUT_DIR}/overlay-packages"
         cp -r "${REPO_ROOT}/config/overlay-packages/"* "${CHECKOUT_DIR}/overlay-packages/"
-        echo "  Copied overlay packages: $(ls ${CHECKOUT_DIR}/overlay-packages/ 2>/dev/null | tr '\n' ' ')"
+        echo "  Copied overlay packages: $(ls "${CHECKOUT_DIR}/overlay-packages/" 2>/dev/null | tr '\n' ' ')"
     fi
 
     if command -v docker &>/dev/null; then
@@ -166,15 +166,15 @@ with open('repo.json', 'w') as f:
         # Determine Docker security options based on environment.
         # GHA runners need --privileged for FUSE; local builds use minimal caps.
         if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-            DOCKER_SECURITY_OPTS="--privileged"
+            DOCKER_SECURITY_OPTS=("--privileged")
             echo "  (detected GHA runner, using --privileged for FUSE)"
         else
-            DOCKER_SECURITY_OPTS="--cap-add SYS_ADMIN --cap-add DAC_READ_SEARCH --device /dev/fuse"
+            DOCKER_SECURITY_OPTS=("--cap-add" "SYS_ADMIN" "--cap-add" "DAC_READ_SEARCH" "--device" "/dev/fuse")
         fi
 
         set +e
         docker run --rm \
-            ${DOCKER_SECURITY_OPTS} \
+            "${DOCKER_SECURITY_OPTS[@]}" \
             -e ANDROID_ROOT=/system \
             -e TERMUX_TOPDIR=/home/builder/.termux-build \
             --volume "${CHECKOUT_DIR}:/home/builder/termux-packages" \

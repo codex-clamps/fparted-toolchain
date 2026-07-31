@@ -110,7 +110,7 @@ Device validation is a **manual gate** performed by the maintainer outside CI: G
 Artifacts needed (from the release):
 
 - `fparted-rootfs-<version>-<abi>.zip` for the target ABI (`arm64-v8a` or `x86_64`)
-- `rootfs-manifest.json`
+- `rootfs-manifest.json` — embedded inside each bundle ZIP (extract the ZIP to obtain it)
 - `release-manifest.json`
 - `release-manifest.sig`
 - `SHA256SUMS`
@@ -123,12 +123,12 @@ Procedure:
    sha256sum -c SHA256SUMS
    ```
    (or compare each asset hash against `release-manifest.json`).
-3. **Verify the manifest signature**:
+3. **Verify the manifest signature** (run from a checkout of this repository):
    ```bash
    gpg --import keys/release-pubkey.asc
    gpg --verify release-manifest.sig release-manifest.json
    ```
-4. **Inspect the bundle**: extract the zip to a scratch dir and confirm the rootfs layout under the prefix `data/data/vn.shadichy.parted/files` (`usr/bin`, `lib`, …) matches `rootfs-manifest.json`.
+4. **Inspect the bundle**: extract the zip to a scratch dir and confirm the rootfs layout matches `rootfs-manifest.json`. ZIP entries are relative to the prefix — extraction shows `usr/bin/...`, `lib/...` at the archive root, while the installed layout places them under `data/data/vn.shadichy.parted/files`.
 5. **Run on device**: push/extract the bundle onto the device via adb and run each of the 18 required binaries from `config/required-binaries.yaml` (`parted`, `blkid`, `dd`, `test`, `e2fsck`, `mke2fs`, `resize2fs`, `tune2fs`, `mkfs.fat`, `fsck.fat`, `fatlabel`, `mkfs.exfat`, `fsck.exfat`, `exfatlabel`, `mkfs.f2fs`, `fsck.f2fs`, `btrfs`, `mkfs.btrfs`), verifying each prints a version/usage line and exits non-zero properly when invoked incorrectly.
 6. **Record** the device/VM image, Android version, ABI, and results in the release notes or PR.
 

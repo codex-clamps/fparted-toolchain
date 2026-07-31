@@ -42,6 +42,10 @@ def _walk_rootfs(rootfs_dir: Path) -> list[Path]:
     """Walk rootfs directory including dotfiles, returning all entry paths."""
     entries = []
     for dirpath, _dirnames, filenames in os.walk(rootfs_dir, followlinks=False):
+        # Only regular files and file symlinks (os.walk's filenames) are
+        # collected here. Directory entries are intentionally not emitted:
+        # parent directories are implied by the file paths, and extraction /
+        # installation recreates them implicitly.
         for name in filenames:
             entries.append(Path(dirpath) / name)
     return entries
@@ -118,7 +122,7 @@ def assemble_bundle(
 
     # Generate manifest
     manifest = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "abi": abi,
         "termux_commit": termux_commit,

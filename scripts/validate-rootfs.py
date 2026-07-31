@@ -34,7 +34,7 @@ def validate_manifest_schema(manifest: dict) -> list[str]:
     if missing:
         errors.append(f"Manifest missing keys: {missing}")
 
-    if manifest.get("schema_version") != "1.0":
+    if manifest.get("schema_version") != "1.1":
         errors.append(f"Unexpected schema_version: {manifest.get('schema_version')}")
 
     if manifest.get("abi") not in SUPPORTED_ABIS:
