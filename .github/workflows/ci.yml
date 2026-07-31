@@ -43,6 +43,48 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck
       - name: ShellCheck
         run: shellcheck --severity=warning scripts/*.sh
+      - name: Test required-binary mode check
+        run: |
+          set -euo pipefail
+          python3 << 'EOF'
+          import importlib.util
+          import pathlib
+
+          spec = importlib.util.spec_from_file_location(
+              "validate_rootfs", pathlib.Path("scripts/validate-rootfs.py"))
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          def run_case(name, manifest, expect_error):
+              errors = module.validate_required_binary_modes(manifest)
+              ok = bool(errors) == expect_error
+              print(f"{'PASS' if ok else 'FAIL'}: {name} -> {errors}")
+              if not ok:
+                  raise SystemExit(f"case failed: {name}")
+
+          # 1. Regular file mode 0644 (420) must be rejected.
+          run_case("usr/bin/parted file mode 0644 rejected", {
+              "entries": [{"path": "usr/bin/parted", "type": "file", "mode": 420}],
+          }, True)
+          # 2. Regular file mode 0700 (448) must pass.
+          run_case("usr/bin/parted file mode 0700 accepted", {
+              "entries": [{"path": "usr/bin/parted", "type": "file", "mode": 448}],
+          }, False)
+          # 3. Symlink dd -> coreutils is skipped (no error).
+          run_case("usr/bin/dd symlink -> coreutils skipped", {
+              "entries": [{"path": "usr/bin/dd", "type": "symlink",
+                           "link_target": "coreutils", "mode": 511}],
+          }, False)
+          # 4. Missing mode must yield a clean error, not a crash.
+          run_case("usr/bin/parted mode None clean error", {
+              "entries": [{"path": "usr/bin/parted", "type": "file", "mode": None}],
+          }, True)
+          # 5. Regular file mode 0755 (493) must be rejected (owner-only).
+          run_case("usr/bin/parted file mode 0755 rejected", {
+              "entries": [{"path": "usr/bin/parted", "type": "file", "mode": 493}],
+          }, True)
+          print("ALL MODE-CHECK CASES PASSED")
+          EOF
       - name: Python lint
         run: |
           python3 -m py_compile scripts/resolve-packages.py

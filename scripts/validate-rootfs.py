@@ -16,6 +16,8 @@ FORBIDDEN_PREFIXES = [
 
 SUPPORTED_ABIS = {"arm64-v8a", "x86_64"}
 
+# Known follow-up: REQUIRED_BINARIES duplicates config/required-binaries.yaml
+# (declared source of truth); keep them in sync until they are unified.
 REQUIRED_BINARIES = [
     "parted", "blkid", "dd", "test",
     "e2fsck", "mke2fs", "resize2fs", "tune2fs",
@@ -147,17 +149,26 @@ def validate_required_binaries(zip_path: Path) -> list[str]:
 
 
 def validate_required_binary_modes(manifest: dict) -> list[str]:
-    """Check that required binaries carry execute bits in the manifest.
+    """Check that required binaries carry owner-only execute bits in the manifest.
 
-    Only regular file entries under usr/bin/ or bin/ are checked; symlink
-    entries (e.g. dd, test -> coreutils) delegate execution to their target
-    file, which carries the execute bits.
+    Policy: only the app's uid may execute the toolchain. For regular file
+    entries under usr/bin/ or bin/, the mode must be exactly owner-executable
+    with no group/other execute bits: (mode & 0o111) == 0o100.
+
+    Verified layout (both arm64-v8a and x86_64 bundles): usr/bin/dd and
+    usr/bin/test are type "symlink" with link_target "coreutils"; those
+    symlinks resolve within usr/bin, and their target usr/bin/coreutils is a
+    regular file normalized to 0700 by build Step 5. Symlink entries delegate
+    execution to their target, so they are skipped here.
     """
     errors = []
     required_names = set(REQUIRED_BINARIES)
 
     for entry in manifest.get("entries", []):
-        path = entry.get("path", "")
+        path = entry.get("path")
+        if not isinstance(path, str):
+            # Malformed entry; skip rather than crash on basename().
+            continue
         if not (path.startswith("usr/bin/") or path.startswith("bin/")):
             continue
         basename = os.path.basename(path)
@@ -169,10 +180,13 @@ def validate_required_binary_modes(manifest: dict) -> list[str]:
         if entry.get("type") != "file":
             continue
         mode = entry.get("mode")
-        if mode is None or (mode & 0o111) == 0:
-            mode_str = "None" if mode is None else f"{mode:04o}"
+        if mode is None or not isinstance(mode, int):
+            errors.append(f"Required binary {basename} has invalid mode {mode!r}")
+            continue
+        if (mode & 0o111) != 0o100:
             errors.append(
-                f"Required binary {basename} lacks execute bits (mode {mode_str})"
+                f"Required binary {basename} must be owner-executable with no "
+                f"group/other execute bits (mode {mode:04o})"
             )
 
     return errors
