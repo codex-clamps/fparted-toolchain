@@ -1,35 +1,32 @@
-name: Repo A CI
+name: Build & Release
 
 on:
-  pull_request:
-    branches: [master]
   push:
     branches: [master]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate-configs:
     name: Validate Configs & Schemas
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: python3 -m pip install pyyaml
-
       - name: Validate aliases
-        run: >
-          python3 scripts/resolve-packages.py --json
-
+        run: python3 scripts/resolve-packages.py --json
       - name: Validate required binaries coverage
-        run: >
-          python3 scripts/resolve-packages.py --check-binaries --json
-
+        run: python3 scripts/resolve-packages.py --check-binaries --json
       - name: Validate schemas
         run: |
           python3 << 'EOF'
@@ -38,17 +35,13 @@ jobs:
               rm_schema = json.load(f)
           with open('schemas/rootfs-manifest.schema.json') as f:
               rf_schema = json.load(f)
-          # Schema files are structurally valid JSON
           print(f'Release manifest schema: {rm_schema["$schema"]}')
           print(f'Rootfs manifest schema: {rf_schema["$schema"]}')
           EOF
-
       - name: Install ShellCheck
         run: sudo apt-get update && sudo apt-get install -y shellcheck
-
       - name: ShellCheck
         run: shellcheck --severity=warning scripts/*.sh
-
       - name: Python lint
         run: |
           python3 -m py_compile scripts/resolve-packages.py
@@ -62,35 +55,26 @@ jobs:
     strategy:
       matrix:
         package: [parted, e2fsprogs, dosfstools, exfatprogs, f2fs-tools, btrfs-progs]
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: python3 -m pip install pyyaml
-
       - name: Resolve build order
-        run: >
-          python3 scripts/resolve-packages.py
-          --graph ${{ matrix.package }}
-          --json
+        run: python3 scripts/resolve-packages.py --graph ${{ matrix.package }} --json
 
   validate-sources:
     name: Validate Pinned Source URLs
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: python3 -m pip install pyyaml
-
       - name: Check source hashes are pinned
         run: |
           python3 -c "
@@ -110,19 +94,224 @@ jobs:
   reproducibility:
     name: Reproducibility Check
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml
       - name: Verify forbidden prefixes
-        run: >
+        run: |
           grep -r "com\.termux" overlays/ scripts/ || true
           grep -r "files/usr" overlays/ scripts/ || true
-
       - name: Check no hardcoded dev paths
-        run: >
+        run: |
           grep -rE '/home/|/root/|/tmp/' \
             --include='*.py' --include='*.sh' scripts/ || true
+
+  build-matrix:
+    name: Compute Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.gen.outputs.include }}
+    steps:
+      - name: Generate matrix
+        id: gen
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo 'include=[{"abi":"x86_64","termux-arch":"x86_64"}]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'include=[{"abi":"arm64-v8a","termux-arch":"aarch64"},{"abi":"armeabi-v7a","termux-arch":"arm"},{"abi":"i686","termux-arch":"i686"},{"abi":"x86_64","termux-arch":"x86_64"}]' >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build ${{ matrix.abi }}
+    needs: build-matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.build-matrix.outputs.include) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml
+      - name: Resolve termux commit from lock file
+        id: lock
+        run: |
+          python3 -c "
+          import json
+          with open('config/termux-lock.json') as f:
+              print(json.load(f)['pinned_termux_commit'])
+          " > /tmp/termux-commit.txt
+          echo "termux_commit=$(cat /tmp/termux-commit.txt)" >> "$GITHUB_OUTPUT"
+      - name: Build rootfs for ${{ matrix.abi }}
+        run: |
+          bash scripts/build-rootfs.sh "${{ matrix.abi }}" "${{ steps.lock.outputs.termux_commit }}"
+        env:
+          TERMUX_APP__PACKAGE_NAME: vn.shadichy.parted
+          TERMUX__ROOTFS: /data/data/vn.shadichy.parted/files
+          TERMUX__PREFIX: /data/data/vn.shadichy.parted/files/usr
+          TERMUX_PREFIX: /data/data/vn.shadichy.parted/files/usr
+          TERMUX_PREFIX_SUBDIR: "usr"
+          ANDROID_ROOT: /system
+      - name: Validate bundle
+        run: |
+          BUNDLE=$(find "staging/${{ matrix.abi }}" -name "fparted-rootfs-*.zip" | head -1)
+          python3 scripts/validate-rootfs.py \
+            --bundle "${BUNDLE}" \
+            --manifest "staging/${{ matrix.abi }}/rootfs-manifest.json"
+      - name: Create artifact tarball
+        run: |
+          mkdir -p artifacts
+          tar -czf "artifacts/rootfs-${{ matrix.abi }}.tar.gz" \
+            -C "staging/${{ matrix.abi }}" \
+            --exclude='termux-checkout' \
+            --exclude='termux-build-cache' \
+            .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rootfs-${{ matrix.abi }}
+          path: artifacts/rootfs-${{ matrix.abi }}.tar.gz
+          retention-days: 30
+
+  verify-all:
+    name: Verify All Four ABIs Present
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all ABI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Verify all four ABI bundles present
+        run: |
+          for abi in arm64-v8a armeabi-v7a i686 x86_64; do
+            if [[ -f "artifacts/rootfs-${abi}/rootfs-${abi}.tar.gz" ]]; then
+              echo "OK: ${abi}"
+            else
+              echo "ERROR: missing artifact for ${abi}"
+              exit 1
+            fi
+          done
+      - name: Forbid standard Termux prefix in outputs
+        run: |
+          mkdir -p /tmp/prefix-check
+          for tarball in artifacts/*/*.tar.gz; do
+            tar -xzf "${tarball}" -C /tmp/prefix-check
+          done
+          if find /tmp/prefix-check -type f \
+              \( -name "*.json" -o -name "*.sh" -o -name "*.md" -o -name "*.txt" -o -name "*.py" \) \
+              -exec grep -l "com\.termux" {} + 2>/dev/null | grep -q .; then
+            echo "ERROR: forbidden com.termux prefix found"
+            exit 1
+          fi
+          echo "No forbidden prefix found"
+
+  assemble-release:
+    name: Assemble Release Assets
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python3 -m pip install pyyaml
+      - name: Download all ABI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+      - name: Extract artifact tarballs
+        run: |
+          mkdir -p release-output
+          for tarball in release-assets/*/*.tar.gz; do
+            echo "Extracting ${tarball}"
+            tar -xzf "${tarball}" -C release-output/
+          done
+      - name: Assemble release manifest
+        run: |
+          python3 scripts/make-release-manifest.py \
+            --bundle-dir release-output \
+            --toolchain-version "${GITHUB_REF#refs/tags/v}" \
+            --termux-commit "$(python3 -c "import json; print(json.load(open('config/termux-lock.json'))['pinned_termux_commit'])")" \
+            --output-dir release-output \
+            --sign
+      - name: Verify all required binaries present
+        run: python3 scripts/resolve-packages.py --check-binaries
+      - name: Verify bundle count
+        run: |
+          COUNT=$(find release-output -name "fparted-rootfs-*.zip" | wc -l)
+          echo "Bundles in release: ${COUNT}"
+          if [ "${COUNT}" -ne 4 ]; then
+            echo "ERROR: Expected 4 ABI bundles, got ${COUNT}"
+            exit 1
+          fi
+      - name: Verify hashes
+        run: |
+          cd release-output
+          sha256sum -c SHA256SUMS
+      - name: Upload release assets (draft)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-output/fparted-rootfs-*.zip
+            release-output/release-manifest.json
+            release-output/release-manifest.sig
+            release-output/SHA256SUMS
+            release-output/packages.spdx.json
+            release-output/source-offer.json
+          draft: true
+          fail_on_unmatched_files: true
+
+  smoke-test:
+    name: Smoke Test on Rooted Android
+    needs: assemble-release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/fparted-test
+      - name: Extract release bundles
+        run: |
+          for tarball in /tmp/fparted-test/*/*.tar.gz; do
+            echo "Extracting ${tarball}"
+            tar -xzf "${tarball}" -C /tmp/fparted-test/
+          done
+      - name: Find latest release bundle
+        id: bundle
+        run: |
+          BUNDLE=$(find /tmp/fparted-test -name "fparted-rootfs-*.zip" | head -1)
+          ABI=$(basename "${BUNDLE}" .zip | grep -oP '(?<=-)(?:arm64-v8a|armeabi-v7a|i686|x86_64)')
+          echo "bundle=${BUNDLE}" >> "$GITHUB_OUTPUT"
+          echo "abi=${ABI}" >> "$GITHUB_OUTPUT"
+      - name: Install toolchain to test device
+        run: |
+          adb root
+          adb push "${{ steps.bundle.outputs.bundle }}" /data/local/tmp/
+      - name: Verify required binaries on device
+        run: |
+          for bin in parted blkid dd test e2fsck mke2fs resize2fs tune2fs; do
+            adb shell "ls -la /data/data/vn.shadichy.parted/files/usr/bin/${bin}" || exit 1
+          done
+      - name: Record device target
+        run: |
+          echo "Test device: $(adb shell getprop ro.product.device)"
+          echo "Android version: $(adb shell getprop ro.build.version.release)"

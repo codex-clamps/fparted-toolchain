@@ -11,7 +11,7 @@ What this project is: A deterministic, reproducible rootfs builder for the fpart
 
 ## Repository Structure
 Explain each directory:
-- .github/workflows/ — CI, build, release pipelines
+- .github/workflows/ — single CI/build/release pipeline (ci.yml)
 - config/ — packages.yaml, aliases.yaml, termux-lock.json, overlay-packages/
 - overlays/ — package recipe overlays
 - patches/ — termux prefix patch
@@ -60,24 +60,13 @@ Explain each directory:
 
 ## GitHub Actions Workflows
 
-### Repo A CI (ci.yml)
-Triggers on push to master + PRs.
-- Validates config files
-- Runs code quality checks
-- Quick validation
-
-### Build Rootfs Bundles (build.yml)
-Triggers on push to master.
-- Matrix build for all 4 ABIs: arm64-v8a, armeabi-v7a, i686, x86_64
-- Each job: checkout → setup Python → build rootfs → validate → upload artifact
-- Uses reusable workflows for the actual build
-
-### Publish Release (release.yml)
-Triggers on tag push (v*).
-- Builds all 4 ABIs
-- Assembles release manifest
-- Publishes to GitHub Releases
-- Includes smoke test step (self-hosted, android, rooted)
+### Build & Release (ci.yml)
+Single consolidated workflow replacing the former ci.yml, build.yml, release.yml, and build-abi.yml.
+Triggers on push to master, tag push (v*), PRs, and workflow_dispatch.
+- PR: x86_64-only smoke build + config/schema/shellcheck/reproducibility validation
+- Push to master: matrix build for all 4 ABIs (arm64-v8a, armeabi-v7a, i686, x86_64) + verify-all
+- Tag push (v*): 4-ABI build + release manifest/signing/SHA256SUMS assembly + draft GitHub release + smoke test
+- Each build job: checkout → setup Python → build rootfs → validate → upload artifact
 
 ## Build Results
 - x86_64: Built locally 2026-07-30, validated, tested on real Android 12 device (libvirt/qemu VM)

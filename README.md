@@ -19,9 +19,7 @@ This repository produces signed, verified rootfs bundles for each supported Andr
 ```text
 .
 ├── .github/workflows/
-│   ├── ci.yml       # PR validation (config, schemas, shellcheck, reproducibility)
-│   ├── build.yml    # Reusable matrix build for all four ABIs
-│   └── release.yml  # Signed release publishing with self-hosted Android smoke tests
+│   └── ci.yml       # Single pipeline: PR validation + 4-ABI builds + verify-all + release assembly
 ├── config/
 │   ├── packages.yaml          # Package definitions with source hashes, licenses
 │   ├── aliases.yaml           # User-facing name → canonical target mapping
