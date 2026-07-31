@@ -65,7 +65,7 @@ Single consolidated workflow replacing the former ci.yml, build.yml, release.yml
 Triggers on push to master, tag push (v*), PRs, and workflow_dispatch.
 - PR: x86_64-only smoke build + config/schema/shellcheck/reproducibility validation
 - Push to master: matrix build for both ABIs (arm64-v8a, x86_64) + verify-all
-- Tag push (v*): 2-ABI build + release manifest/GPG signing/SHA256SUMS assembly + automatically published GitHub release (no draft) + smoke test
+- Tag push (v*): 2-ABI build + release manifest/GPG signing/SHA256SUMS assembly + automatically published GitHub release (no draft); device smoke testing is a manual out-of-band gate (see below)
 - Each build job: checkout → setup Python → build rootfs → validate → upload artifact
 
 ## Build Results
@@ -141,6 +141,35 @@ git push origin v0.3.0
 ```
 
 Release manifests are signed with the release signing key whose private half lives only in the `GPG_PRIVATE_KEY` repo secret; the public half is committed at `keys/release-pubkey.asc`. Tag pushes publish the release automatically (no draft). Signing is mandatory: if GPG signing fails, the release job fails.
+
+## Device Smoke Test (Manual, Out-of-Band)
+
+Device validation is a **manual gate** performed by the maintainer outside CI: GitHub-hosted runners can never attach a rooted Android device, so the former `smoke-test` CI job was removed. After a release is published, validate the artifacts on a rooted Android device or an Android x86_64 emulator/VM connected via adb before announcing the release.
+
+Artifacts needed (from the release):
+
+- `fparted-rootfs-<version>-<abi>.zip` for the target ABI (`arm64-v8a` or `x86_64`)
+- `rootfs-manifest.json`
+- `release-manifest.json`
+- `release-manifest.sig`
+- `SHA256SUMS`
+
+Procedure:
+
+1. **Fetch** the release assets for the target ABI (`arm64-v8a` or `x86_64`).
+2. **Verify integrity**:
+   ```bash
+   sha256sum -c SHA256SUMS
+   ```
+   (or compare each asset hash against `release-manifest.json`).
+3. **Verify the manifest signature**:
+   ```bash
+   gpg --import keys/release-pubkey.asc
+   gpg --verify release-manifest.sig release-manifest.json
+   ```
+4. **Inspect the bundle**: extract the zip to a scratch dir and confirm the rootfs layout under the prefix `data/data/vn.shadichy.parted/files` (`usr/bin`, `lib`, …) matches `rootfs-manifest.json`.
+5. **Run on device**: push/extract the bundle onto the device via adb and run each of the 18 required binaries from `config/required-binaries.yaml` (`parted`, `blkid`, `dd`, `test`, `e2fsck`, `mke2fs`, `resize2fs`, `tune2fs`, `mkfs.fat`, `fsck.fat`, `fatlabel`, `mkfs.exfat`, `fsck.exfat`, `exfatlabel`, `mkfs.f2fs`, `fsck.f2fs`, `btrfs`, `mkfs.btrfs`), verifying each prints a version/usage line and exits non-zero properly when invoked incorrectly.
+6. **Record** the device/VM image, Android version, ABI, and results in the release notes or PR.
 
 ## Integration with fparted App
 - (Note: This section describes what the fparted app needs to do with these artifacts — not yet implemented)
