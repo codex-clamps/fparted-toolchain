@@ -72,11 +72,20 @@ jobs:
             --bundle "${BUNDLE}" \
             --manifest staging/${{ matrix.abi }}/rootfs-manifest.json
 
+      - name: Create artifact tarball
+        run: |
+          mkdir -p artifacts
+          tar -czf "artifacts/rootfs-${{ matrix.abi }}.tar.gz" \
+            -C "staging/${{ matrix.abi }}" \
+            --exclude='termux-checkout' \
+            --exclude='termux-build-cache' \
+            .
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: rootfs-${{ matrix.abi }}
-          path: staging/${{ matrix.abi }}/*
+          path: artifacts/rootfs-${{ matrix.abi }}.tar.gz
           retention-days: 30
 
   full-matrix-check:

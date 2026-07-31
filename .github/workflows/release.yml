@@ -58,11 +58,20 @@ jobs:
           BUNDLE=$(find staging/${{ matrix.abi }} -name "fparted-rootfs-*.zip" | head -1)
           python3 scripts/validate-rootfs.py --bundle "${BUNDLE}"
 
+      - name: Create artifact tarball
+        run: |
+          mkdir -p artifacts
+          tar -czf "artifacts/rootfs-${{ matrix.abi }}.tar.gz" \
+            -C "staging/${{ matrix.abi }}" \
+            --exclude='termux-checkout' \
+            --exclude='termux-build-cache' \
+            .
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: rootfs-${{ matrix.abi }}
-          path: staging/${{ matrix.abi }}/*
+          path: artifacts/rootfs-${{ matrix.abi }}.tar.gz
 
   assemble-release:
     name: Assemble Release Assets
@@ -83,10 +92,13 @@ jobs:
         with:
           path: release-assets
 
-      - name: Create release directory
+      - name: Extract artifact tarballs
         run: |
           mkdir -p release-output
-          find release-assets/ -type f -exec mv {} release-output/ \;
+          for tarball in release-assets/*/*.tar.gz; do
+            echo "Extracting ${tarball}"
+            tar -xzf "${tarball}" -C release-output/
+          done
 
       - name: Assemble release manifest
         run: |
@@ -143,6 +155,13 @@ jobs:
         with:
           path: /tmp/fparted-test
 
+      - name: Extract release bundles
+        run: |
+          for tarball in /tmp/fparted-test/*/*.tar.gz; do
+            echo "Extracting ${tarball}"
+            tar -xzf "${tarball}" -C /tmp/fparted-test/
+          done
+
       - name: Find latest release bundle
         id: bundle
         run: |
@@ -161,7 +180,7 @@ jobs:
       - name: Verify required binaries on device
         run: |
           for bin in parted blkid dd test e2fsck mke2fs resize2fs tune2fs; do
-            adb shell "ls -la /data/data/vn.shadichy.parted/files/bin/${bin}" || exit 1
+            adb shell "ls -la /data/data/vn.shadichy.parted/files/usr/bin/${bin}" || exit 1
           done
 
       - name: Record device target
