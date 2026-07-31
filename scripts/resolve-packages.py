@@ -134,9 +134,13 @@ def check_required_binaries(packages: dict, required: list[str]) -> dict[str, bo
     """Check which required binaries have providers in the package set."""
     result = {}
     pkg_names = set(packages.get("packages", {}).keys())
+    provided = set()
+    for pkg_def in packages.get("packages", {}).values():
+        provided.update(pkg_def.get("provides", []) or [])
     for binary in required:
-        # Binary name often matches or starts with a package name
-        found = binary in pkg_names or any(
+        # Prefer the explicit per-package `provides` mapping; fall back to a
+        # name-prefix heuristic for packages that lack a provides list.
+        found = binary in provided or binary in pkg_names or any(
             binary.startswith(pkg) or pkg.startswith(binary)
             for pkg in pkg_names
         )
@@ -188,6 +192,8 @@ def main():
             for binary, found in bin_coverage.items():
                 status = "OK" if found else "MISSING"
                 print(f"  {binary}: {status}")
+        if not all(bin_coverage.values()):
+            return 1
         return 0
 
     # Default: print alias validation and dependency graph summary

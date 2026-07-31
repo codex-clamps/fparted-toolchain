@@ -3,7 +3,7 @@
 
 Packages one or more rootfs bundles with:
   - release-manifest.json (schema, version, Termux commit, prefix, ABI mapping, asset hashes)
-  - release-manifest.sig (placeholder for offline signing)
+  - release-manifest.sig (real detached GPG signature; required with --sign)
   - SHA256SUMS (per-asset and per-bundle hashes)
   - packages.spdx.json (SPDX SBOM)
   - source-offer.json (source availability declaration)
@@ -119,9 +119,8 @@ def generate_spdx(bundles: list[dict], toolchain_version: str) -> dict:
     }
 
 
-def sign_manifest(manifest: dict, output_path: Path, manifest_path: Path | None = None) -> bool:
+def sign_manifest(manifest: dict, output_path: Path) -> bool:
     """Sign the manifest with a GPG key. Returns True on success."""
-    # Try GPG signing (requires GPG key in agent)
     try:
         manifest_json = json.dumps(manifest, indent=2, sort_keys=True)
         result = subprocess.run(
@@ -129,17 +128,21 @@ def sign_manifest(manifest: dict, output_path: Path, manifest_path: Path | None 
             input=manifest_json,
             capture_output=True, text=True, timeout=30,
         )
-        return result.returncode == 0
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        # GPG not available or timed out — write placeholder
-        if manifest_path and manifest_path.exists():
-            manifest_hash = compute_file_hash(manifest_path)
-        else:
-            manifest_hash = hashlib.sha256(json.dumps(manifest, sort_keys=True, indent=2).encode()).hexdigest()
-        output_path.write_text(
-            f"# Signature placeholder — gpg signing not available\n"
-            f"# Manifest SHA-256: {manifest_hash}\n"
-        )
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            print(
+                f"ERROR: gpg signing failed (exit code {result.returncode})",
+                file=sys.stderr,
+            )
+            if detail:
+                print(f"  gpg: {detail}", file=sys.stderr)
+            return False
+        return True
+    except FileNotFoundError:
+        print("ERROR: gpg executable not found; cannot sign release manifest", file=sys.stderr)
+        return False
+    except subprocess.TimeoutExpired:
+        print("ERROR: gpg signing timed out", file=sys.stderr)
         return False
 
 
@@ -183,8 +186,9 @@ def main():
 
     # Sign manifest if requested
     sig_path = output_dir / "release-manifest.sig"
-    if args.sign:
-        sign_manifest(manifest, sig_path, manifest_path)
+    if args.sign and not sign_manifest(manifest, sig_path):
+        print("ERROR: manifest signing failed", file=sys.stderr)
+        return 1
 
     # Write SHA256SUMS
     sums_path = output_dir / "SHA256SUMS"

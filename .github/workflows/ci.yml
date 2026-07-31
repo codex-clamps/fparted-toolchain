@@ -242,6 +242,16 @@ jobs:
             echo "Extracting ${tarball}"
             tar -xzf "${tarball}" -C release-output/
           done
+      - name: Version bundle filenames to tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          for bundle in release-output/fparted-rootfs-*.zip; do
+            abi=$(basename "${bundle}" .zip | grep -oP '(?:arm64-v8a|x86_64)$')
+            mv "${bundle}" "release-output/fparted-rootfs-${VERSION}-${abi}.zip"
+          done
+          ls -1 release-output/fparted-rootfs-*.zip
+      - name: Import release signing key
+        run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
       - name: Assemble release manifest
         run: |
           python3 scripts/make-release-manifest.py \
@@ -264,7 +274,7 @@ jobs:
         run: |
           cd release-output
           sha256sum -c SHA256SUMS
-      - name: Upload release assets (draft)
+      - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
@@ -274,7 +284,7 @@ jobs:
             release-output/SHA256SUMS
             release-output/packages.spdx.json
             release-output/source-offer.json
-          draft: true
+          draft: false
           fail_on_unmatched_files: true
 
   smoke-test:

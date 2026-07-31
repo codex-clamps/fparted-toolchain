@@ -19,7 +19,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CONFIG_DIR="${REPO_ROOT}/config"
 LOCK_FILE="${CONFIG_DIR}/termux-lock.json"
-PACKAGES_FILE="${CONFIG_DIR}/packages.yaml"
 
 # Validate arguments
 if [[ $# -lt 1 ]]; then

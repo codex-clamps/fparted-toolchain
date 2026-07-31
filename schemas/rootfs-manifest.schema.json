@@ -44,10 +44,14 @@
             "type": "string",
             "minLength": 1,
             "not": {
-              "pattern": "^(\\.\\./|/)"
-            },
-            "not": {
-              "contains": "\u0000"
+              "anyOf": [
+                {
+                  "pattern": "^(\\.\\./|/)"
+                },
+                {
+                  "pattern": "\\u0000"
+                }
+              ]
             }
           },
           "type": {
@@ -60,13 +64,13 @@
             "maximum": 4095
           },
           "sha256": {
-            "type": "string",
+            "type": ["string", "null"],
             "pattern": "^[0-9a-f]{64}$",
-            "description": "Required for 'file' type entries"
+            "description": "Required for 'file' type entries; null otherwise"
           },
           "link_target": {
-            "type": "string",
-            "description": "Required for 'symlink' type entries"
+            "type": ["string", "null"],
+            "description": "Required for 'symlink' type entries; null otherwise"
           },
           "owner": {
             "type": "string"

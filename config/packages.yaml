@@ -3,19 +3,28 @@
 packages:
   parted:
     description: "Partition manipulator"
+    provides: [parted]
   util-linux:
     description: "Miscellaneous system utilities"
+    provides: [blkid]
   coreutils:
     description: "GNU core utilities"
+    provides: [dd, test]
   zlib:
     description: "zlib compression library (zlib-ng in Termux)"
+    provides: []
   e2fsprogs:
     description: "ext2/3/4 filesystem utilities"
+    provides: [e2fsck, mke2fs, resize2fs, tune2fs]
   dosfstools:
     description: "FAT filesystem utilities"
+    provides: [mkfs.fat, fsck.fat, fatlabel]
   exfatprogs:
     description: "exFAT filesystem utilities"
+    provides: [mkfs.exfat, fsck.exfat, exfatlabel]
   btrfs-progs:
     description: "Btrfs filesystem utilities"
+    provides: [btrfs, mkfs.btrfs]
   f2fs-tools:
     description: "F2FS filesystem utilities"
+    provides: [mkfs.f2fs, fsck.f2fs]

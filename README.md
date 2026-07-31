@@ -14,6 +14,12 @@ This repository produces signed, verified rootfs bundles for each supported Andr
 - **No `/files/usr` path leakage** allowed in any output
 - **No standard Termux prefix binaries** from `com.termux` repository
 
+## Release Signing & Publishing
+
+- Release manifests are signed with a real GPG key (ed25519). The private key lives only in the `GPG_PRIVATE_KEY` repository secret; the public key is committed at `keys/release-pubkey.asc`.
+- Signing is mandatory: the `assemble-release` job fails if the detached signature cannot be produced.
+- Tag pushes (v*.*.*) publish releases automatically — no draft is created.
+
 ## Directory Layout
 
 ```text
@@ -36,6 +42,8 @@ This repository produces signed, verified rootfs bundles for each supported Andr
 │   ├── assemble-rootfs.py     # Deterministic bundle assembly + manifest generation
 │   ├── validate-rootfs.py     # ELF/path/dep/license/SBOM/smoke validation
 │   └── make-release-manifest.py  # Release manifest + SHA256SUMS + SPDX generation
+├── keys/
+│   └── release-pubkey.asc    # Release signing public key (verifies release-manifest.sig)
 ├── schemas/
 │   ├── release-manifest.schema.json
 │   └── rootfs-manifest.schema.json

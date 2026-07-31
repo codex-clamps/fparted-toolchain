@@ -65,7 +65,7 @@ Single consolidated workflow replacing the former ci.yml, build.yml, release.yml
 Triggers on push to master, tag push (v*), PRs, and workflow_dispatch.
 - PR: x86_64-only smoke build + config/schema/shellcheck/reproducibility validation
 - Push to master: matrix build for both ABIs (arm64-v8a, x86_64) + verify-all
-- Tag push (v*): 2-ABI build + release manifest/signing/SHA256SUMS assembly + draft GitHub release + smoke test
+- Tag push (v*): 2-ABI build + release manifest/GPG signing/SHA256SUMS assembly + automatically published GitHub release (no draft) + smoke test
 - Each build job: checkout → setup Python → build rootfs → validate → upload artifact
 
 ## Build Results
@@ -139,6 +139,8 @@ git push origin v0.3.0
 
 # GHA handles the rest
 ```
+
+Release manifests are signed with the release signing key whose private half lives only in the `GPG_PRIVATE_KEY` repo secret; the public half is committed at `keys/release-pubkey.asc`. Tag pushes publish the release automatically (no draft). Signing is mandatory: if GPG signing fails, the release job fails.
 
 ## Integration with fparted App
 - (Note: This section describes what the fparted app needs to do with these artifacts — not yet implemented)

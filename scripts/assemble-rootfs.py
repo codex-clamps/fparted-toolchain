@@ -79,7 +79,7 @@ def collect_entries(rootfs_dir: Path, prefix: str = "") -> list[dict]:
         if entry_path.is_symlink():
             entry["type"] = "symlink"
             entry["link_target"] = os.readlink(entry_path)
-            entry["mode"] = 0o120000 | stat.S_IMODE(entry_path.lstat().st_mode)
+            entry["mode"] = stat.S_IMODE(entry_path.lstat().st_mode)
             entry["sha256"] = None
         elif entry_path.is_file():
             entry["type"] = "file"
