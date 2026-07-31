@@ -146,6 +146,38 @@ def validate_required_binaries(zip_path: Path) -> list[str]:
     return errors
 
 
+def validate_required_binary_modes(manifest: dict) -> list[str]:
+    """Check that required binaries carry execute bits in the manifest.
+
+    Only regular file entries under usr/bin/ or bin/ are checked; symlink
+    entries (e.g. dd, test -> coreutils) delegate execution to their target
+    file, which carries the execute bits.
+    """
+    errors = []
+    required_names = set(REQUIRED_BINARIES)
+
+    for entry in manifest.get("entries", []):
+        path = entry.get("path", "")
+        if not (path.startswith("usr/bin/") or path.startswith("bin/")):
+            continue
+        basename = os.path.basename(path)
+        if basename not in required_names:
+            continue
+        if entry.get("type") == "symlink":
+            # Symlink modes are irrelevant; the target file carries the bits.
+            continue
+        if entry.get("type") != "file":
+            continue
+        mode = entry.get("mode")
+        if mode is None or (mode & 0o111) == 0:
+            mode_str = "None" if mode is None else f"{mode:04o}"
+            errors.append(
+                f"Required binary {basename} lacks execute bits (mode {mode_str})"
+            )
+
+    return errors
+
+
 def validate_license_sbom(zip_path: Path) -> list[str]:
     """Check that the bundle includes license/SBOM information.
 
@@ -260,6 +292,10 @@ def main():
     # 3. Required binaries check
     bin_errors = validate_required_binaries(bundle_path)
     all_errors.extend(bin_errors)
+
+    # 3b. Required binaries mode check
+    mode_errors = validate_required_binary_modes(manifest)
+    all_errors.extend(mode_errors)
 
     # 4. License / SBOM check
     license_warnings = validate_license_sbom(bundle_path)

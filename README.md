@@ -100,8 +100,9 @@ Every release bundle must pass:
 4. **Per-file SHA-256 hash verification** — matches `rootfs-manifest.json`
 5. **ELF architecture check** — matches target ABI
 6. **Required binary presence** — all binaries in `required-binaries.yaml` are present
-7. **License/SBOM coverage** — `packages.spdx.json` included in release
-8. **Forbidden prefix grep** — CI fails if standard Termux prefix appears in output
+7. **Required binary execute bits** — every required regular-file binary under `usr/bin/` or `bin/` carries at least one execute bit in `rootfs-manifest.json` (symlink entries exempt)
+8. **License/SBOM coverage** — `packages.spdx.json` included in release
+9. **Forbidden prefix grep** — CI fails if standard Termux prefix appears in output
 
 ## Device Smoke Test (Manual, Out-of-Band)
 
@@ -131,6 +132,8 @@ Procedure:
 4. **Inspect the bundle**: extract the zip to a scratch dir and confirm the rootfs layout matches `rootfs-manifest.json`. ZIP entries are relative to the prefix — extraction shows `usr/bin/...`, `lib/...` at the archive root, while the installed layout places them under `data/data/vn.shadichy.parted/files`.
 5. **Run on device**: push/extract the bundle onto the device via adb and run each of the 18 required binaries from `config/required-binaries.yaml` (`parted`, `blkid`, `dd`, `test`, `e2fsck`, `mke2fs`, `resize2fs`, `tune2fs`, `mkfs.fat`, `fsck.fat`, `fatlabel`, `mkfs.exfat`, `fsck.exfat`, `exfatlabel`, `mkfs.f2fs`, `fsck.f2fs`, `btrfs`, `mkfs.btrfs`), verifying each prints a version/usage line and exits non-zero properly when invoked incorrectly.
 6. **Record** the device/VM image, Android version, ABI, and results in the release notes or PR.
+
+> **Permissions note:** bundles ship owner-only modes — executables and directories are `0700`, data files `0600`. Files are executable only by the owning uid: once the app installs the toolchain, that uid is the app's own. When smoke-testing manually over adb, extraction runs as a different uid, so use `adb root` and `chmod`/`chown` to make the binaries executable for the testing context if execution is denied.
 
 ## Repo A Interface with the App
 

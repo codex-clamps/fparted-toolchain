@@ -42,6 +42,7 @@ Explain each directory:
 ### Step 4: Extract Rootfs
 - Extracts all .pkg.tar.xz files into rootfs/ staging directory
 - Handles both top-level packages and dependencies
+- Normalizes permissions to owner-only after extraction: executables and directories 0700, data files 0600
 
 ### Step 5: Assemble Bundle
 - assemble-rootfs.py creates deterministic ZIP bundle
@@ -54,6 +55,7 @@ Explain each directory:
 - validate-rootfs.py checks:
   - Schema compliance
   - Required binaries present
+  - Required binaries carry execute bits (owner-only 0700)
   - All file hashes match manifest
   - ELF architecture matches target ABI
   - No forbidden paths
@@ -170,6 +172,8 @@ Procedure:
 4. **Inspect the bundle**: extract the zip to a scratch dir and confirm the rootfs layout matches `rootfs-manifest.json`. ZIP entries are relative to the prefix — extraction shows `usr/bin/...`, `lib/...` at the archive root, while the installed layout places them under `data/data/vn.shadichy.parted/files`.
 5. **Run on device**: push/extract the bundle onto the device via adb and run each of the 18 required binaries from `config/required-binaries.yaml` (`parted`, `blkid`, `dd`, `test`, `e2fsck`, `mke2fs`, `resize2fs`, `tune2fs`, `mkfs.fat`, `fsck.fat`, `fatlabel`, `mkfs.exfat`, `fsck.exfat`, `exfatlabel`, `mkfs.f2fs`, `fsck.f2fs`, `btrfs`, `mkfs.btrfs`), verifying each prints a version/usage line and exits non-zero properly when invoked incorrectly.
 6. **Record** the device/VM image, Android version, ABI, and results in the release notes or PR.
+
+> **Permissions note:** bundles ship owner-only modes — executables and directories are `0700`, data files `0600`. Files are executable only by the owning uid: once the app installs the toolchain, that uid is the app's own. When smoke-testing manually over adb, extraction runs as a different uid, so use `adb root` and `chmod`/`chown` to make the binaries executable for the testing context if execution is denied.
 
 ## Integration with fparted App
 - (Note: This section describes what the fparted app needs to do with these artifacts — not yet implemented)

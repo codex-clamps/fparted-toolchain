@@ -308,11 +308,12 @@ fi
 # --- Step 5: Recreate modes, symlinks, and verify hashes ---
 echo "[5/6] Normalizing permissions and verifying integrity ..."
 
-find "${ROOTFS_DIR}" -type d -exec chmod 755 {} \; 2>/dev/null || true
-find "${ROOTFS_DIR}" -type f -exec chmod 644 {} \; 2>/dev/null || true
-find "${ROOTFS_DIR}/usr/bin" "${ROOTFS_DIR}/bin" -type f -executable 2>/dev/null | while read -r f; do
-    chmod 755 "${f}"
-done
+# Owner-only permission policy: executables and directories 0700, data files
+# 0600. Only the app's uid may execute the toolchain (termux massage already
+# strips group/other; this normalizes deterministically across the tree).
+find "${ROOTFS_DIR}" -type d -exec chmod 700 {} \; 2>/dev/null || true
+find "${ROOTFS_DIR}" -type f -executable -exec chmod 700 {} \; 2>/dev/null || true
+find "${ROOTFS_DIR}" -type f ! -executable -exec chmod 600 {} \; 2>/dev/null || true
 
 echo "(ELF validation step: verify architecture and Bionic linkage)"
 
