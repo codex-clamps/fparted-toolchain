@@ -199,7 +199,19 @@ with open('repo.json', 'w') as f:
         # termux_run_build-package() which omits -o and uses the default dir.
         if [[ -d "${CHECKOUT_DIR}/output" ]]; then
             echo "  Collecting dependency packages from ${CHECKOUT_DIR}/output ..."
-            find "${CHECKOUT_DIR}/output" -name "*.pkg.tar.xz" -exec cp -n {} "${BUILD_OUTPUT_DIR}/" \;
+            # upload-artifact@v4 rejects ':' in filenames (Arch epoch separator in
+            # versions, e.g. ca-certificates-1:2026.07.16-0-any.pkg.tar.xz).
+            # Sanitize the copy destination: replace ':' with '_'.
+            while IFS= read -r -d '' f; do
+                base="$(basename "$f")"
+                safe="${base//:/_}"
+                if [[ "${base}" != "${safe}" ]]; then
+                    echo "    sanitized: ${base} -> ${safe}"
+                    cp -n "$f" "${BUILD_OUTPUT_DIR}/${safe}" 2>/dev/null || true
+                else
+                    cp -n "$f" "${BUILD_OUTPUT_DIR}/" 2>/dev/null || true
+                fi
+            done < <(find "${CHECKOUT_DIR}/output" -name "*.pkg.tar.xz" -print0)
             echo "  Collected $(find "${BUILD_OUTPUT_DIR}" -name '*.pkg.tar.xz' | wc -l) total packages"
         fi
     else
