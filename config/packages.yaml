@@ -28,3 +28,21 @@ packages:
   f2fs-tools:
     description: "F2FS filesystem utilities"
     provides: [mkfs.f2fs, fsck.f2fs]
+  ntfsprogs-plus:
+    description: "NTFS filesystem utilities (ntfs-3g successor)"
+    provides: [mkfs.ntfs, ntfsfix, ntfslabel, ntfsresize]
+  xfsprogs:
+    description: "XFS filesystem utilities"
+    provides: [mkfs.xfs, xfs_repair, xfs_admin, xfs_growfs]
+  jfsutils:
+    description: "JFS filesystem utilities"
+    provides: [mkfs.jfs, jfs_fsck, jfs_tune]
+  hfsprogs:
+    description: "HFS+ filesystem utilities"
+    provides: [mkfs.hfsplus, fsck.hfsplus]
+  apfsprogs:
+    description: "APFS filesystem utilities"
+    provides: [mkfs.apfs, mkapfs, apfs-label, apfs-snap, apfsck, fsck.apfs]
+  bcachefs-tools:
+    description: "BCachefs filesystem utilities"
+    provides: [mkfs.bcachefs, mkfs.fuse.bcachefs, fsck.bcachefs, fsck.fuse.bcachefs, mount.bcachefs, mount.fuse.bcachefs, bcachefs]

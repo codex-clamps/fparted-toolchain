@@ -33,3 +33,41 @@ required_binaries:
   # Btrfs filesystems (btrfs-progs)
   - btrfs
   - mkfs.btrfs
+
+  # NTFS filesystems (ntfsprogs-plus)
+  - mkfs.ntfs
+  - ntfsfix
+  - ntfslabel
+  - ntfsresize
+
+  # XFS filesystems (xfsprogs)
+  - mkfs.xfs
+  - xfs_repair
+  - xfs_admin
+  - xfs_growfs
+
+  # JFS filesystems (jfsutils)
+  - mkfs.jfs
+  - jfs_fsck
+  - jfs_tune
+
+  # HFS+ filesystems (hfsprogs)
+  - mkfs.hfsplus
+  - fsck.hfsplus
+
+  # APFS filesystems (apfsprogs)
+  - mkfs.apfs
+  - mkapfs
+  - apfs-label
+  - apfs-snap
+  - apfsck
+  - fsck.apfs
+
+  # BCachefs filesystems (bcachefs-tools)
+  - mkfs.bcachefs
+  - mkfs.fuse.bcachefs
+  - fsck.bcachefs
+  - fsck.fuse.bcachefs
+  - mount.bcachefs
+  - mount.fuse.bcachefs
+  - bcachefs

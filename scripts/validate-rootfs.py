@@ -25,6 +25,13 @@ REQUIRED_BINARIES = [
     "mkfs.exfat", "fsck.exfat", "exfatlabel",
     "mkfs.f2fs", "fsck.f2fs",
     "btrfs", "mkfs.btrfs",
+    "mkfs.ntfs", "ntfsfix", "ntfslabel", "ntfsresize",
+    "mkfs.xfs", "xfs_repair", "xfs_admin", "xfs_growfs",
+    "mkfs.jfs", "jfs_fsck", "jfs_tune",
+    "mkfs.hfsplus", "fsck.hfsplus",
+    "mkfs.apfs", "mkapfs", "apfs-label", "apfs-snap", "apfsck", "fsck.apfs",
+    "mkfs.bcachefs", "mkfs.fuse.bcachefs", "fsck.bcachefs", "fsck.fuse.bcachefs",
+    "mount.bcachefs", "mount.fuse.bcachefs", "bcachefs",
 ]
 
 
