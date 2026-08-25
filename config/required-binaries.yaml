@@ -9,9 +9,11 @@ required_binaries:
   # Low-level disk & copy utilities
   - dd
   - test
+  - mkswap
 
   # ext2/3/4 filesystems (e2fsprogs)
   - e2fsck
+  - e2image
   - mke2fs
   - resize2fs
   - tune2fs
@@ -33,6 +35,21 @@ required_binaries:
   # Btrfs filesystems (btrfs-progs)
   - btrfs
   - mkfs.btrfs
+  - btrfstune
+
+  # Disk encryption (cryptsetup, built from upstream libcryptsetup package)
+  - cryptsetup
+
+  # LVM logical volume manager (lvm2)
+  - lvm
+  - pvcreate
+  - vgcreate
+  - lvcreate
+  - lvremove
+  - lvresize
+  - pvs
+  - vgs
+  - lvs
 
   # NTFS filesystems (ntfsprogs-plus)
   - mkfs.ntfs

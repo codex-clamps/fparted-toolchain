@@ -1,0 +1,13 @@
+--- a/libfs/devices.h
++++ b/libfs/devices.h
+@@ -20,6 +20,9 @@
+ #ifndef H_DEVICES
+ #define H_DEVICES
+
++/* int64_t/int32_t are used in the prototypes below */
++#include <stdint.h>
++
+ #define GET	0
+ #define PUT	1
+ #define VRFY	2
+

@@ -1,0 +1,14 @@
+--- a/include/f2fs_fs.h
++++ b/include/f2fs_fs.h
+@@ -103,7 +103,9 @@ typedef uint8_t		u8;
+ typedef uint8_t		u8;
+ typedef u32		block_t;
+ typedef u32		nid_t;
+-#ifndef bool
++#if defined(bool) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
++/* bool already provided via <stdbool.h> or native keyword (C23) */
++#else
+ typedef u8		bool;
+ #endif
+ typedef unsigned long	pgoff_t;
+

@@ -1,0 +1,16 @@
+--- a/include/linux/bsearch.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/bsearch.h	2026-08-26 01:16:24.138932754 +0700
+@@ -4,6 +4,13 @@
+ 
+ #include <linux/types.h>
+ 
++/* glibc >= 2.39 exposes a const-generic bsearch macro for C23 feature profiles
++ * (reachable even under -std=gnu11 when _GNU_SOURCE is set on newer toolchains).
++ * Neutralize it so the plain prototype below does not collide with it. */
++#ifdef bsearch
++#undef bsearch
++#endif
++
+ static __always_inline
+ void *__inline_bsearch(const void *key, const void *base, size_t num, size_t size, cmp_func_t cmp)
+ {

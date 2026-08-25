@@ -1,0 +1,11 @@
+--- a/Makefile	2023-10-26 00:59:16.000000000 +0700
++++ b/Makefile	2026-08-26 00:53:50.645520541 +0700
+@@ -58,7 +58,7 @@
+ CFLAGS+=$(call cc-disable-warning, shift-overflow)
+ CFLAGS+=$(call cc-disable-warning, enum-conversion)
+ 
+-PKGCONFIG_LIBS="blkid uuid liburcu libsodium zlib liblz4 libzstd libudev libkeyutils"
++PKGCONFIG_LIBS="blkid uuid liburcu libsodium zlib liblz4 libzstd libkeyutils"
+ ifdef BCACHEFS_FUSE
+ 	PKGCONFIG_LIBS+="fuse3 >= 3.7"
+ 	CFLAGS+=-DBCACHEFS_FUSE

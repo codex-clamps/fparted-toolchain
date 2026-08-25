@@ -16,3 +16,5 @@ aliases:
   squashfs-tools: squashfs-tools
   xfsprogs: xfsprogs
   libisofs: libisofs
+  cryptsetup: libcryptsetup
+  lvm2: lvm2

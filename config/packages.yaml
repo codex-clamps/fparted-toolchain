@@ -6,7 +6,7 @@ packages:
     provides: [parted]
   util-linux:
     description: "Miscellaneous system utilities"
-    provides: [blkid]
+    provides: [blkid, mkswap]
   coreutils:
     description: "GNU core utilities"
     provides: [dd, test]
@@ -15,7 +15,7 @@ packages:
     provides: []
   e2fsprogs:
     description: "ext2/3/4 filesystem utilities"
-    provides: [e2fsck, mke2fs, resize2fs, tune2fs]
+    provides: [e2fsck, e2image, mke2fs, resize2fs, tune2fs]
   dosfstools:
     description: "FAT filesystem utilities"
     provides: [mkfs.fat, fsck.fat, fatlabel]
@@ -24,7 +24,13 @@ packages:
     provides: [mkfs.exfat, fsck.exfat, exfatlabel]
   btrfs-progs:
     description: "Btrfs filesystem utilities"
-    provides: [btrfs, mkfs.btrfs]
+    provides: [btrfs, mkfs.btrfs, btrfstune]
+  libcryptsetup:
+    description: "Disk encryption utility (LUKS); upstream package name for the cryptsetup binary"
+    provides: [cryptsetup]
+  lvm2:
+    description: "LVM2 logical volume manager tools"
+    provides: [lvm, pvcreate, vgcreate, lvcreate, lvremove, lvresize, pvs, vgs, lvs]
   f2fs-tools:
     description: "F2FS filesystem utilities"
     provides: [mkfs.f2fs, fsck.f2fs]

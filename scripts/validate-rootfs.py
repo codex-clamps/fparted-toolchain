@@ -16,15 +16,49 @@ FORBIDDEN_PREFIXES = [
 
 SUPPORTED_ABIS = {"arm64-v8a", "x86_64"}
 
-# Known follow-up: REQUIRED_BINARIES duplicates config/required-binaries.yaml
-# (declared source of truth); keep them in sync until they are unified.
-REQUIRED_BINARIES = [
-    "parted", "blkid", "dd", "test",
-    "e2fsck", "mke2fs", "resize2fs", "tune2fs",
+def load_required_binaries() -> list[str]:
+    """Load required binaries from config/required-binaries.yaml with fallback."""
+    config_file = Path(__file__).resolve().parent.parent / "config" / "required-binaries.yaml"
+    if config_file.exists():
+        try:
+            import yaml
+            with open(config_file) as f:
+                data = yaml.safe_load(f)
+                if data and "required_binaries" in data:
+                    return list(data["required_binaries"])
+        except Exception:
+            pass
+        try:
+            bins = []
+            with open(config_file) as f:
+                in_list = False
+                for line in f:
+                    stripped = line.strip()
+                    if stripped.startswith("required_binaries:"):
+                        in_list = True
+                        continue
+                    if in_list:
+                        if stripped.startswith("- "):
+                            bins.append(stripped[2:].strip())
+                        elif stripped and not stripped.startswith("#"):
+                            break
+            if bins:
+                return bins
+        except Exception:
+            pass
+    return DEFAULT_REQUIRED_BINARIES
+
+
+DEFAULT_REQUIRED_BINARIES = [
+    "parted", "blkid", "dd", "test", "mkswap",
+    "e2fsck", "e2image", "mke2fs", "resize2fs", "tune2fs",
     "mkfs.fat", "fsck.fat", "fatlabel",
     "mkfs.exfat", "fsck.exfat", "exfatlabel",
     "mkfs.f2fs", "fsck.f2fs",
-    "btrfs", "mkfs.btrfs",
+    "btrfs", "mkfs.btrfs", "btrfstune",
+    "cryptsetup",
+    "lvm", "pvcreate", "vgcreate", "lvcreate", "lvremove", "lvresize",
+    "pvs", "vgs", "lvs",
     "mkfs.ntfs", "ntfsfix", "ntfslabel", "ntfsresize",
     "mkfs.xfs", "xfs_repair", "xfs_admin", "xfs_growfs",
     "mkfs.jfs", "jfs_fsck", "jfs_tune",
@@ -33,6 +67,9 @@ REQUIRED_BINARIES = [
     "mkfs.bcachefs", "mkfs.fuse.bcachefs", "fsck.bcachefs", "fsck.fuse.bcachefs",
     "mount.bcachefs", "mount.fuse.bcachefs", "bcachefs",
 ]
+
+REQUIRED_BINARIES = DEFAULT_REQUIRED_BINARIES
+
 
 
 def validate_manifest_schema(manifest: dict) -> list[str]:
@@ -144,7 +181,7 @@ def validate_required_binaries(zip_path: Path) -> list[str]:
                 basename = os.path.basename(name)
                 found_binaries.add(basename)
 
-    for required in REQUIRED_BINARIES:
+    for required in load_required_binaries():
         if required not in found_binaries:
             err_msg = f"Required binary missing from bundle: {required}"
             # Some binaries may be symlinks or provided differently
@@ -169,7 +206,7 @@ def validate_required_binary_modes(manifest: dict) -> list[str]:
     execution to their target, so they are skipped here.
     """
     errors = []
-    required_names = set(REQUIRED_BINARIES)
+    required_names = set(load_required_binaries())
 
     for entry in manifest.get("entries", []):
         path = entry.get("path")

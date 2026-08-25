@@ -42,6 +42,59 @@ def collect_bundles(release_dir: Path, pattern: str = "*.zip") -> list[dict]:
     return bundles
 
 
+def load_required_binaries() -> list[str]:
+    """Load required binaries from config/required-binaries.yaml with fallback."""
+    config_file = Path(__file__).resolve().parent.parent / "config" / "required-binaries.yaml"
+    if config_file.exists():
+        try:
+            import yaml
+            with open(config_file) as f:
+                data = yaml.safe_load(f)
+                if data and "required_binaries" in data:
+                    return list(data["required_binaries"])
+        except Exception:
+            pass
+        try:
+            bins = []
+            with open(config_file) as f:
+                in_list = False
+                for line in f:
+                    stripped = line.strip()
+                    if stripped.startswith("required_binaries:"):
+                        in_list = True
+                        continue
+                    if in_list:
+                        if stripped.startswith("- "):
+                            bins.append(stripped[2:].strip())
+                        elif stripped and not stripped.startswith("#"):
+                            break
+            if bins:
+                return bins
+        except Exception:
+            pass
+    return DEFAULT_REQUIRED_BINARIES
+
+
+DEFAULT_REQUIRED_BINARIES = [
+    "parted", "blkid", "dd", "test", "mkswap",
+    "e2fsck", "e2image", "mke2fs", "resize2fs", "tune2fs",
+    "mkfs.fat", "fsck.fat", "fatlabel",
+    "mkfs.exfat", "fsck.exfat", "exfatlabel",
+    "mkfs.f2fs", "fsck.f2fs",
+    "btrfs", "mkfs.btrfs", "btrfstune",
+    "cryptsetup",
+    "lvm", "pvcreate", "vgcreate", "lvcreate", "lvremove", "lvresize",
+    "pvs", "vgs", "lvs",
+    "mkfs.ntfs", "ntfsfix", "ntfslabel", "ntfsresize",
+    "mkfs.xfs", "xfs_repair", "xfs_admin", "xfs_growfs",
+    "mkfs.jfs", "jfs_fsck", "jfs_tune",
+    "mkfs.hfsplus", "fsck.hfsplus",
+    "mkfs.apfs", "mkapfs", "apfs-label", "apfs-snap", "apfsck", "fsck.apfs",
+    "mkfs.bcachefs", "mkfs.fuse.bcachefs", "fsck.bcachefs", "fsck.fuse.bcachefs",
+    "mount.bcachefs", "mount.fuse.bcachefs", "bcachefs",
+]
+
+
 def generate_release_manifest(
     bundles: list[dict],
     toolchain_version: str,
@@ -80,21 +133,7 @@ def generate_release_manifest(
             "abi": list(assets.keys()),
         },
         "assets": assets,
-        "required_binaries": [
-            "parted", "blkid", "dd", "test",
-            "e2fsck", "mke2fs", "resize2fs", "tune2fs",
-            "mkfs.fat", "fsck.fat", "fatlabel",
-            "mkfs.exfat", "fsck.exfat", "exfatlabel",
-            "mkfs.f2fs", "fsck.f2fs",
-            "btrfs", "mkfs.btrfs",
-            "mkfs.ntfs", "ntfsfix", "ntfslabel", "ntfsresize",
-            "mkfs.xfs", "xfs_repair", "xfs_admin", "xfs_growfs",
-            "mkfs.jfs", "jfs_fsck", "jfs_tune",
-            "mkfs.hfsplus", "fsck.hfsplus",
-            "mkfs.apfs", "mkapfs", "apfs-label", "apfs-snap", "apfsck", "fsck.apfs",
-            "mkfs.bcachefs", "mkfs.fuse.bcachefs", "fsck.bcachefs", "fsck.fuse.bcachefs",
-            "mount.bcachefs", "mount.fuse.bcachefs", "bcachefs",
-        ],
+        "required_binaries": load_required_binaries(),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
 
