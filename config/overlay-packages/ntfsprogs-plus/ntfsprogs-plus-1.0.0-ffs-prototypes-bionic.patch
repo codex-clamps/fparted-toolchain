@@ -1,0 +1,58 @@
+--- a/include/compat.h
++++ b/include/compat.h
+@@ -60,9 +60,13 @@
+ #define PATH_MAX 4096
+ #endif
+ 
+-#ifndef HAVE_FFS
++/* Android's Bionic exports ffs()/ffsl() from libc but exposes no
++ * declarations for them through its headers, so configure detects the
++ * symbols (HAVE_FFS) while callers are left without prototypes, which
++ * clang rejects. Declare both here unconditionally: an identical
++ * redeclaration is valid C wherever the platform does declare them. */
+ extern int ffs(int i);
+-#endif /* HAVE_FFS */
++extern int ffsl(long i);
+ 
+ #ifndef HAVE_DAEMON
+ extern int daemon(int nochdir, int noclose);
+--- a/libntfs/bitmap.c
++++ b/libntfs/bitmap.c
+@@ -23,6 +23,7 @@
+ 
+ #ifdef HAVE_CONFIG_H
+ #include "config.h"
++#include "compat.h"
+ #endif
+ 
+ #ifdef HAVE_STDLIB_H
+--- a/libntfs/dir.c
++++ b/libntfs/dir.c
+@@ -25,6 +25,7 @@
+ 
+ #ifdef HAVE_CONFIG_H
+ #include "config.h"
++#include "compat.h"
+ #endif
+ 
+ #ifdef HAVE_STDLIB_H
+--- a/libntfs/logfile.c
++++ b/libntfs/logfile.c
+@@ -23,6 +23,7 @@
+ 
+ #ifdef HAVE_CONFIG_H
+ #include "config.h"
++#include "compat.h"
+ #endif
+ 
+ #ifdef HAVE_STDLIB_H
+--- a/src/mkntfs.c
++++ b/src/mkntfs.c
+@@ -33,6 +33,7 @@
+ 
+ #ifdef HAVE_CONFIG_H
+ #include "config.h"
++#include "compat.h"
+ #endif
+ 
+ #ifdef  HAVE_UNISTD_H
