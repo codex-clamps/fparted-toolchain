@@ -1,0 +1,27 @@
+--- a/mkfs/proto.c
++++ b/mkfs/proto.c
+@@ -10,6 +10,24 @@
+ #include <sys/stat.h>
+ #include <sys/xattr.h>
+ #include <linux/xattr.h>
++
++#if defined(__ANDROID__) && (__ANDROID_API__ < 29)
++/*
++ * Bionic only declares reallocarray() from API level 29; Termux builds
++ * against API 24.  Provide the obvious overflow-checked fallback.
++ */
++#include <errno.h>
++#include <stdint.h>
++static void *reallocarray(void *ptr, size_t nmemb, size_t size)
++{
++	if (nmemb > SIZE_MAX / size) {
++		errno = ENOMEM;
++		return NULL;
++	}
++	return realloc(ptr, nmemb * size);
++}
++#endif
++
+ #include "libfrog/convert.h"
+ #include "proto.h"
+ 

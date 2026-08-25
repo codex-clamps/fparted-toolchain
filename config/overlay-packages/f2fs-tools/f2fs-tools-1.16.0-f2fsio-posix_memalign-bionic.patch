@@ -1,0 +1,18 @@
+--- a/tools/f2fs_io/f2fs_io.c
++++ b/tools/f2fs_io/f2fs_io.c
+@@ -98,7 +98,14 @@
+ 
+ static void *aligned_xalloc(size_t alignment, size_t size)
+ {
+-	void *p = aligned_alloc(alignment, size);
++	/* posix_memalign() instead of aligned_alloc(): Bionic only exposes
++	 * aligned_alloc() from API level 28 and Termux targets API 24, while
++	 * posix_memalign() is available everywhere and drops aligned_alloc's
++	 * strict size-multiple-of-alignment requirement. */
++	void *p;
++
++	if (posix_memalign(&p, alignment, size))
++		p = NULL;
+ 
+ 	if (!p)
+ 		die("Memory alloc failed (requested %zu bytes)", size);

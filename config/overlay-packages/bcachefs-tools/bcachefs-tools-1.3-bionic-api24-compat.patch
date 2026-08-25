@@ -1,0 +1,42 @@
+--- a/include/linux/slab.h
++++ b/include/linux/slab.h
+@@ -97,6 +97,16 @@
+ #define kcalloc(n, size, flags)		kmalloc_array(n, size, flags|__GFP_ZERO)
+ 
+ #define kfree(p)			free(p)
++#if defined(__ANDROID__) && (__ANDROID_API__ < 28)
++/*
++ * Bionic only exposes aligned_alloc() from API level 28; Termux builds
++ * against API 24.  memalign() has identical arguments and is available
++ * on every Android API level (and on glibc/musl hosts).
++ */
++#include <malloc.h>
++#define aligned_alloc(alignment, size)	memalign((alignment), (size))
++#endif
++
+ #define kzfree(p)			free(p)
+ 
+ #define kvmalloc(size, flags)		kmalloc(size, flags)
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -12,6 +12,20 @@
+ #include <linux/byteorder.h>
+ #include <linux/compiler.h>
+ #include <linux/math.h>
++
++#if defined(__ANDROID__) && (__ANDROID_API__ < 28)
++/*
++ * Bionic only declares strchrnul() from API level 28; Termux builds
++ * against API 24.
++ */
++#include <string.h>
++static inline char *strchrnul(const char *s, int c)
++{
++	char *ret = strchr(s, c);
++
++	return ret ? ret : (char *) s + strlen(s);
++}
++#endif
+ 
+ #define BIT(nr)			(1UL << (nr))
+ #define BIT_ULL(nr)		(1ULL << (nr))
