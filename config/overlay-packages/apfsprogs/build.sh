@@ -6,7 +6,6 @@ TERMUX_PKG_MAINTAINER="Shadichy <shadichy@blisslabs.org>"
 TERMUX_PKG_VERSION=0.2.1
 TERMUX_PKG_SRCURL=https://github.com/eafer/apfsprogs/archive/refs/tags/v${TERMUX_PKG_VERSION}.tar.gz
 TERMUX_PKG_SHA256=92cf4beaf0a34182a2ad02a4babf2235c5ae88c819fda22eeca64dc77bb30a52
-TERMUX_PKG_DEPENDS=""
 TERMUX_PKG_BUILD_IN_SRC=true
 
 # No configure system: each program lives in its own directory with a private
