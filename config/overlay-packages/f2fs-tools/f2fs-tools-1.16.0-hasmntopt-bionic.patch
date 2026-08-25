@@ -1,0 +1,19 @@
+--- a/lib/libf2fs.c
++++ b/lib/libf2fs.c
+@@ -722,7 +722,15 @@
+ 	while ((mnt = getmntent(file)) != NULL) {
+ 		if (!strcmp(device, mnt->mnt_fsname)) {
+ #ifdef MNTOPT_RO
+-			if (hasmntopt(mnt, MNTOPT_RO))
++			/*
++			 * Bionic declares hasmntopt() only for __ANDROID_API__
++			 * >= 26 while still defining MNTOPT_RO, so calling it
++			 * from an API 24 toolchain build fails to compile.
++			 * Scan the option list directly; hasmntopt() is just a
++			 * token lookup in mnt_opts.
++			 */
++			if (mnt->mnt_opts != NULL &&
++			    strstr(mnt->mnt_opts, MNTOPT_RO) != NULL)
+ 				c.ro = 1;
+ #endif
+ 			break;
