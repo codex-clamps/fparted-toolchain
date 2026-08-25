@@ -1,0 +1,26 @@
+--- a/fsck/sload.c
++++ b/fsck/sload.c
+@@ -31,7 +31,13 @@
+ #ifndef _WIN32
+ static fs_config_f fs_config_func = NULL;
+ 
+-#ifdef HAVE_SELINUX_ANDROID_H
++/*
++ * private/* AOSP headers exist only in Android platform trees, which always
++ * define WITH_ANDROID. Require both so a non-AOSP libselinux shipping
++ * selinux/android.h (e.g. Termux libandroid-selinux) cannot enable this
++ * block outside the Android platform build system.
++ */
++#if defined(HAVE_SELINUX_ANDROID_H) && defined(WITH_ANDROID)
+ #include <selinux/android.h>
+ #include <private/android_filesystem_config.h>
+ #include <private/canned_fs_config.h>
+@@ -324,7 +330,7 @@
+ #endif
+ skip:
+ #endif
+-#ifdef HAVE_SELINUX_ANDROID_H
++#if defined(HAVE_SELINUX_ANDROID_H) && defined(WITH_ANDROID)
+ 	/* Load the FS config */
+ 	if (c.fs_config_file) {
+ 		int ret = load_canned_fs_config(c.fs_config_file);
