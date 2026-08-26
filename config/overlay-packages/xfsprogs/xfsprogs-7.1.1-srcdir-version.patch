@@ -1,0 +1,22 @@
+--- a/configure
++++ b/configure
+@@ -19287,7 +19287,7 @@
+ ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ 
+ 
+-    . ./VERSION
++    . $srcdir/VERSION
+     pkg_version=${PKG_MAJOR}.${PKG_MINOR}.${PKG_REVISION}
+ 
+     pkg_release=$PKG_BUILD
+--- a/m4/package_globals.m4
++++ b/m4/package_globals.m4
+@@ -10,7 +10,7 @@
+ 
+     AC_PROG_CC
+ 
+-    . ./VERSION
++    . $srcdir/VERSION
+     pkg_version=${PKG_MAJOR}.${PKG_MINOR}.${PKG_REVISION}
+     AC_SUBST(pkg_version)
+     pkg_release=$PKG_BUILD
