@@ -1,0 +1,289 @@
+--- a/include/platform_defs.h
++++ b/include/platform_defs.h
+@@ -335,4 +335,123 @@
+ #define __counted_by_ptr(member)
+ #endif
+ 
++
++/*
++ * hasmntopt equivalents usable on Bionic API < 26, where the function is not
++ * declared (and from API 26 the glibc-style delimiter semantics apply).
++ * Both scan opts as a comma-delimited token list and honor the same match
++ * rules as hasmntopt: a full option token, terminated by '\0', ',' or '='.
++ */
++static inline char *
++mnt_opts_find(const char *opts, const char *opt)
++{
++	size_t		len = strlen(opt);
++	char		*s = (char *)opts;
++
++	while (s && *s) {
++		if (strncmp(s, opt, len) == 0 &&
++		    (s[len] == '\0' || s[len] == '='))
++			return s;
++		s = strchr(s, ',');
++		if (s)
++			s++;
++	}
++	return NULL;
++}
++
++static inline int
++mnt_opts_has(const char *opts, const char *opt)
++{
++	return mnt_opts_find(opts, opt) != NULL;
++}
++/*
++ * Bionic exposes getsubopt() only from API level 26; Termux targets API 24,
++ * where the symbol exists in libc but no header declares it.  Provide a
++ * POSIX-semantics fallback for that case.
++ */
++#if defined(__ANDROID__) && __ANDROID_API__ < 26
++static inline int
++getsubopt(char **optionp, char *const *tokens, char **valuep)
++{
++	char		*seg = *optionp;
++	char		*p = seg;
++	int		i;
++
++	while (*p != '\0' && *p != ',')
++		p++;
++	for (i = 0; tokens[i] != NULL; i++) {
++		size_t	tlen = strlen(tokens[i]);
++		size_t	len = (size_t)(p - seg);
++
++		if (tlen <= len && strncmp(seg, tokens[i], tlen) == 0 &&
++		    (tlen == len || seg[tlen] == '=')) {
++			if (tlen == len)
++				*valuep = NULL;
++			else
++				*valuep = seg + tlen + 1;
++			break;
++		}
++	}
++	if (*p == ',') {
++		*p = '\0';
++		p++;
++	}
++	if (tokens[i] == NULL) {
++		i = -1;
++		/* POSIX: report the whole option segment as the value. */
++		*valuep = seg;
++	}
++	*optionp = p;
++	return i;
++}
++#endif /* defined(__ANDROID__) && __ANDROID_API__ < 26 */
++
++#if defined(__ANDROID__)
++/*
++ * Bionic does not declare the legacy valloc() interface at any API level.
++ * xfs_db's debug allocator uses it for page-aligned allocations.
++ */
++static inline void *
++valloc(size_t size)
++{
++	return memalign(sysconf(_SC_PAGESIZE), size);
++}
++#endif
++
++/*
++ * Bionic gates POSIX password/group database iteration behind API 26; the
++ * struct definitions are unconditional, so only the function declarations
++ * are missing on older API levels.  The symbols themselves are exported by
++ * libc on every supported Android release.
++ */
++#if defined(__ANDROID__) && __ANDROID_API__ < 26
++extern struct passwd *getpwent(void);
++extern void setpwent(void);
++extern void endpwent(void);
++extern struct group *getgrent(void);
++extern void setgrent(void);
++extern void endgrent(void);
++#endif
++
++/*
++ * Bionic declares syncfs() only since API 28; the libc symbol exists on all
++ * supported Android releases.
++ */
++#if defined(__ANDROID__) && __ANDROID_API__ < 28
++extern int syncfs(int fd);
++#endif
++
++/*
++ * Bionic ships no sync_file_range() wrapper at any API level; go straight to
++ * the kernel syscall like glibc's implementation does.
++ */
++#if defined(__ANDROID__)
++#include <sys/syscall.h>
++#include <unistd.h>
++static inline int sync_file_range(int fd, long long offset, long long nbytes,
++				  unsigned int flags)
++{
++	return syscall(__NR_sync_file_range, fd, offset, nbytes, flags);
++}
++#endif
+ #endif	/* __XFS_PLATFORM_DEFS_H__ */
+--- a/include/linux/fsmap.h
++++ b/include/linux/fsmap.h
+@@ -0,0 +1,113 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++/*
++ * FS_IOC_GETFSMAP ioctl infrastructure.
++ *
++ * Copyright (C) 2017 Oracle.  All Rights Reserved.
++ *
++ * Author: Darrick J. Wong <darrick.wong@oracle.com>
++ */
++#ifndef _LINUX_FSMAP_H
++#define _LINUX_FSMAP_H
++
++#include <linux/types.h>
++
++/*
++ *	Structure for FS_IOC_GETFSMAP.
++ *
++ *	The memory layout for this call are the scalar values defined in
++ *	struct fsmap_head, followed by two struct fsmap that describe
++ *	the lower and upper bound of mappings to return, followed by an
++ *	array of struct fsmap mappings.
++ *
++ *	fmh_iflags control the output of the call, whereas fmh_oflags report
++ *	on the overall record output.  fmh_count should be set to the
++ *	length of the fmh_recs array, and fmh_entries will be set to the
++ *	number of entries filled out during each call.  If fmh_count is
++ *	zero, the number of reverse mappings will be returned in
++ *	fmh_entries, though no mappings will be returned.  fmh_reserved
++ *	must be set to zero.
++ *
++ *	The two elements in the fmh_keys array are used to constrain the
++ *	output.  The first element in the array should represent the
++ *	lowest disk mapping ("low key") that the user wants to learn
++ *	about.  If this value is all zeroes, the filesystem will return
++ *	the first entry it knows about.  For a subsequent call, the
++ *	contents of fsmap_head.fmh_recs[fsmap_head.fmh_count - 1] should be
++ *	copied into fmh_keys[0] to have the kernel start where it left off.
++ *
++ *	The second element in the fmh_keys array should represent the
++ *	highest disk mapping ("high key") that the user wants to learn
++ *	about.  If this value is all ones, the filesystem will not stop
++ *	until it runs out of mapping to return or runs out of space in
++ *	fmh_recs.
++ *
++ *	fmr_device can be either a 32-bit cookie representing a device, or
++ *	a 32-bit dev_t if the FMH_OF_DEV_T flag is set.  fmr_physical,
++ *	fmr_offset, and fmr_length are expressed in units of bytes.
++ *	fmr_owner is either an inode number, or a special value if
++ *	FMR_OF_SPECIAL_OWNER is set in fmr_flags.
++ */
++struct fsmap {
++	__u32		fmr_device;	/* device id */
++	__u32		fmr_flags;	/* mapping flags */
++	__u64		fmr_physical;	/* device offset of segment */
++	__u64		fmr_owner;	/* owner id */
++	__u64		fmr_offset;	/* file offset of segment */
++	__u64		fmr_length;	/* length of segment */
++	__u64		fmr_reserved[3];	/* must be zero */
++};
++
++struct fsmap_head {
++	__u32		fmh_iflags;	/* control flags */
++	__u32		fmh_oflags;	/* output flags */
++	__u32		fmh_count;	/* # of entries in array incl. input */
++	__u32		fmh_entries;	/* # of entries filled in (output). */
++	__u64		fmh_reserved[6];	/* must be zero */
++
++	struct fsmap	fmh_keys[2];	/* low and high keys for the mapping search */
++	struct fsmap	fmh_recs[];	/* returned records */
++};
++
++/* Size of an fsmap_head with room for nr records. */
++static __inline__ __kernel_size_t
++fsmap_sizeof(
++	unsigned int	nr)
++{
++	return sizeof(struct fsmap_head) + nr * sizeof(struct fsmap);
++}
++
++/* Start the next fsmap query at the end of the current query results. */
++static __inline__ void
++fsmap_advance(
++	struct fsmap_head	*head)
++{
++	head->fmh_keys[0] = head->fmh_recs[head->fmh_entries - 1];
++}
++
++/*	fmh_iflags values - set by FS_IOC_GETFSMAP caller in the header. */
++/* no flags defined yet */
++#define FMH_IF_VALID		0
++
++/*	fmh_oflags values - returned in the header segment only. */
++#define FMH_OF_DEV_T		0x1	/* fmr_device values will be dev_t */
++
++/*	fmr_flags values - returned for each non-header segment */
++#define FMR_OF_PREALLOC		0x1	/* segment = unwritten pre-allocation */
++#define FMR_OF_ATTR_FORK	0x2	/* segment = attribute fork */
++#define FMR_OF_EXTENT_MAP	0x4	/* segment = extent map */
++#define FMR_OF_SHARED		0x8	/* segment = shared with another file */
++#define FMR_OF_SPECIAL_OWNER	0x10	/* owner is a special value */
++#define FMR_OF_LAST		0x20	/* segment is the last in the dataset */
++
++/* Each FS gets to define its own special owner codes. */
++#define FMR_OWNER(type, code)	(((__u64)type << 32) | \
++				 ((__u64)code & 0xFFFFFFFFULL))
++#define FMR_OWNER_TYPE(owner)	((__u32)((__u64)owner >> 32))
++#define FMR_OWNER_CODE(owner)	((__u32)(((__u64)owner & 0xFFFFFFFFULL)))
++#define FMR_OWN_FREE		FMR_OWNER(0, 1) /* free space */
++#define FMR_OWN_UNKNOWN		FMR_OWNER(0, 2) /* unknown owner */
++#define FMR_OWN_METADATA	FMR_OWNER(0, 3) /* metadata */
++
++#define FS_IOC_GETFSMAP		_IOWR('X', 59, struct fsmap_head)
++
++#endif /* _LINUX_FSMAP_H */
+--- a/libfrog/paths.c
++++ b/libfrog/paths.c
+@@ -13,6 +13,8 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include "paths.h"
++#include "platform_defs.h"
++
+ #include "input.h"
+ #include "projects.h"
+ #include <mntent.h>
+@@ -316,14 +318,17 @@
+ 	/*
+ 	 * Extract log device and realtime device from mount options.
+ 	 *
+-	 * Note: the glibc hasmntopt implementation requires that the
+-	 * character in mnt_opts immediately after the search string
+-	 * must be a NULL ('\0'), a comma (','), or an equals ('=').
+-	 * Therefore we cannot search for 'logdev=' directly.
++	 * Bionic does not declare hasmntopt() before API level 26 while
++	 * glibc's version requires that the character in mnt_opts
++	 * immediately after the search string must be a NULL ('\0'), a
++	 * comma (','), or an equals ('='). Scan mnt_opts directly with the
++	 * same delimiter semantics instead of calling hasmntopt.
+ 	 */
+-	if ((fslog = hasmntopt(mnt, "logdev")) && fslog[6] == '=')
++	fslog = mnt_opts_find(mnt->mnt_opts, "logdev");
++	if (fslog && fslog[6] == '=')
+ 		fslog += 7;
+-	if ((fsrt = hasmntopt(mnt, "rtdev")) && fsrt[5] == '=')
++	fsrt = mnt_opts_find(mnt->mnt_opts, "rtdev");
++	if (fsrt && fsrt[5] == '=')
+ 		fsrt += 6;
+ 
+ 	/* Do this only after we've finished processing mount options */
+--- a/libfrog/linux.c
++++ b/libfrog/linux.c
+@@ -83,7 +83,8 @@
+ 		if (mst.st_dev != s->st_rdev)
+ 			continue;
+ 		/* Found our device, is RO OK? */
+-		if ((flags & CHECK_MOUNT_WRITABLE) && hasmntopt(mnt, MNTOPT_RO))
++		if ((flags & CHECK_MOUNT_WRITABLE) &&
++		    mnt_opts_has(mnt->mnt_opts, MNTOPT_RO))
+ 			continue;
+ 		else
+ 			break;
