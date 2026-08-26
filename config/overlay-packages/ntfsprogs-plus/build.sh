@@ -13,7 +13,16 @@ TERMUX_PKG_EXTRA_CONFIGURE_ARGS="
 --enable-posix-acls
 --bindir=$TERMUX_PREFIX/bin
 --sbindir=$TERMUX_PREFIX/bin
+--exec-prefix=$TERMUX_PREFIX
 "
+
+# NOTE on --exec-prefix: without it configure.ac sees exec_prefix=NONE and
+# hardcodes rootbindir=/bin, rootsbindir=/sbin, rootlibdir=/lib*; libntfs'
+# install-exec-hook then tries `mv $libdir/libntfs.so* -> //lib` under the
+# DESTDIR staging and fails (CI run 32915299822). Setting exec-prefix selects
+# the branch that maps all three to $(bindir)/$(sbindir)/$(libdir), making
+# the hook's `-ef` same-directory guard skip the move. Upstream offers no
+# --with-rootlibdir override; this is the supported knob.
 
 termux_step_pre_configure() {
 	# GitHub API tarballs ship no generated configure script.
