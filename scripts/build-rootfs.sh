@@ -74,6 +74,8 @@ STAGING_DIR="${REPO_ROOT}/staging/${TARGET_ABI}"
 CHECKOUT_DIR="${STAGING_DIR}/termux-checkout"
 TERMUX_BUILD_CACHE_DIR="${STAGING_DIR}/termux-build-cache"
 mkdir -p "${TERMUX_BUILD_CACHE_DIR}"
+# Container builder UID (1001) differs from host UID; keep cache bind-mount writable.
+chmod a+w "${TERMUX_BUILD_CACHE_DIR}"
 
 echo "[1/6] Checking out termux/termux-packages @ ${TERMUX_COMMIT} ..."
 mkdir -p "${CHECKOUT_DIR}"
@@ -94,6 +96,19 @@ git apply "${REPO_ROOT}/patches/termux-prefix.patch" 2>/dev/null || {
     echo "WARNING: Prefix patch application failed, trying manual override..."
 }
 cd "${REPO_ROOT}"
+
+# --- Step 2b: Apply local checkout overrides (upstream recipe fixes) ---
+# Files under config/checkout-overrides/ are copied over the pinned termux
+# checkout verbatim, keyed by their checkout-relative path (e.g.
+# config/checkout-overrides/packages/libinih/build.sh replaces
+# packages/libinih/build.sh). Use these for targeted fixes to upstream
+# recipes that are broken at the pinned commit and cannot be expressed as
+# overlay packages (same-name shadowing is not supported by the resolver).
+if [[ -d "${CONFIG_DIR}/checkout-overrides" ]]; then
+    echo "[2b] Applying checkout overrides ..."
+    cp -a "${CONFIG_DIR}/checkout-overrides/." "${CHECKOUT_DIR}/"
+    (cd "${CHECKOUT_DIR}" && find . -path ./'.git' -prune -o -type f -newer "${REPO_ROOT}/scripts/build-rootfs.sh" -print | head -20 | sed 's/^/  overridden: /') || true
+fi
 
 # --- Step 3: Build packages for target architecture via Termux Docker ---
 echo "[3/6] Building packages for ${TARGET_ARCH} via Termux Docker builder ..."
@@ -156,6 +171,15 @@ with open('repo.json', 'w') as f:
         cp -r "${REPO_ROOT}/config/overlay-packages/"* "${CHECKOUT_DIR}/overlay-packages/"
         echo "  Copied overlay packages: $(ls "${CHECKOUT_DIR}/overlay-packages/" 2>/dev/null | tr '\n' ' ')"
     fi
+
+    # The container builder runs as UID 1001 while a locally cloned checkout is
+    # owned by the invoking user; dependency builds create their default
+    # output/ directory inside this mounted scriptdir, so grant write access
+    # tree-wide. No-op on CI runners where the UIDs already match. Tolerate
+    # failures on artifacts a previous container run left owned by UID 1001:
+    # those stay writable for the container itself (same UID), which is all
+    # the next docker invocation needs.
+    chmod -R a+rwX "${CHECKOUT_DIR}" 2>/dev/null || true
 
     if command -v docker &>/dev/null; then
         echo "  Pulling Termux builder image: ghcr.io/termux/package-builder"

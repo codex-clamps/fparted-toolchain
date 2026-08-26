@@ -1,7 +1,7 @@
 {
   "$schema": "termux-lock-v1",
-  "pinned_termux_commit": "75e8825ab27b25aa042f76e312572f08bc0f1ef9",
-  "pinned_date": "2026-08-25",
+  "pinned_termux_commit": "45eccee2524fc691ca00c8c3f0b049a201d9ac2c",
+  "pinned_date": "2026-08-26",
   "android_ndk": "r27e",
   "android_sdk": "35",
   "termux_build_api_level": 35,
@@ -26,8 +26,7 @@
     "jfsutils": "jfsutils",
     "libisofs": "libisofs",
     "ntfsprogs-plus": "ntfsprogs-plus",
-    "squashfs-tools": "squashfs-tools",
-    "xfsprogs": "xfsprogs"
+    "squashfs-tools": "squashfs-tools"
   },
   "expected_licenses": [
     "GPL-2.0",
@@ -84,10 +83,6 @@
     "ntfsfix",
     "ntfslabel",
     "ntfsresize",
-    "mkfs.xfs",
-    "xfs_repair",
-    "xfs_admin",
-    "xfs_growfs",
     "mkfs.jfs",
     "jfs_fsck",
     "jfs_tune",
