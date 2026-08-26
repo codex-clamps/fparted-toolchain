@@ -37,9 +37,6 @@ packages:
   ntfsprogs-plus:
     description: "NTFS filesystem utilities (ntfs-3g successor)"
     provides: [mkfs.ntfs, ntfsfix, ntfslabel, ntfsresize]
-  xfsprogs:
-    description: "XFS filesystem utilities"
-    provides: [mkfs.xfs, xfs_repair, xfs_admin, xfs_growfs]
   jfsutils:
     description: "JFS filesystem utilities"
     provides: [mkfs.jfs, jfs_fsck, jfs_tune]

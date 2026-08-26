@@ -86,7 +86,6 @@ DEFAULT_REQUIRED_BINARIES = [
     "lvm", "pvcreate", "vgcreate", "lvcreate", "lvremove", "lvresize",
     "pvs", "vgs", "lvs",
     "mkfs.ntfs", "ntfsfix", "ntfslabel", "ntfsresize",
-    "mkfs.xfs", "xfs_repair", "xfs_admin", "xfs_growfs",
     "mkfs.jfs", "jfs_fsck", "jfs_tune",
     "mkfs.hfsplus", "fsck.hfsplus",
     "mkfs.apfs", "mkapfs", "apfs-label", "apfs-snap", "apfsck", "fsck.apfs",

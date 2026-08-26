@@ -129,7 +129,7 @@ python3 scripts/validate-rootfs.py \
 python3 scripts/make-release-manifest.py \
   --bundle-dir staging/ \
   --toolchain-version 1.0.0 \
-  --termux-commit 75e8825ab27b25aa042f76e312572f08bc0f1ef9 \
+  --termux-commit 45eccee2524fc691ca00c8c3f0b049a201d9ac2c \
   --output-dir release-output
 ```
 
@@ -170,7 +170,7 @@ Procedure:
    gpg --verify release-manifest.sig release-manifest.json
    ```
 4. **Inspect the bundle**: extract the zip to a scratch dir and confirm the rootfs layout matches `rootfs-manifest.json`. ZIP entries are relative to the prefix — extraction shows `usr/bin/...`, `lib/...` at the archive root, while the installed layout places them under `data/data/vn.shadichy.parted/files`.
-5. **Run on device**: push/extract the bundle onto the device via adb and run required binaries from `config/required-binaries.yaml` (including `parted`, `blkid`, `dd`, `test`, `mkswap`, `e2fsck`, `e2image`, `mke2fs`, `resize2fs`, `tune2fs`, `mkfs.fat`, `fsck.fat`, `fatlabel`, `mkfs.exfat`, `fsck.exfat`, `exfatlabel`, `mkfs.f2fs`, `fsck.f2fs`, `btrfs`, `mkfs.btrfs`, `btrfstune`, `cryptsetup`, `mkfs.ntfs`, `ntfsfix`, `ntfslabel`, `ntfsresize`, `mkfs.xfs`, `xfs_repair`, `xfs_admin`, `xfs_growfs`, `mkfs.jfs`, `jfs_fsck`, `jfs_tune`, `mkfs.hfsplus`, `fsck.hfsplus`, `mkfs.apfs`, `apfsck`, `fsck.apfs`, `bcachefs`, `lvm`, `pvcreate`, `vgcreate`, `lvcreate`), verifying each prints a version/usage line and exits non-zero properly when invoked incorrectly.
+5. **Run on device**: push/extract the bundle onto the device via adb and run required binaries from `config/required-binaries.yaml` (including `parted`, `blkid`, `dd`, `test`, `mkswap`, `e2fsck`, `e2image`, `mke2fs`, `resize2fs`, `tune2fs`, `mkfs.fat`, `fsck.fat`, `fatlabel`, `mkfs.exfat`, `fsck.exfat`, `exfatlabel`, `mkfs.f2fs`, `fsck.f2fs`, `btrfs`, `mkfs.btrfs`, `btrfstune`, `cryptsetup`, `mkfs.ntfs`, `ntfsfix`, `ntfslabel`, `ntfsresize`, `mkfs.jfs`, `jfs_fsck`, `jfs_tune`, `mkfs.hfsplus`, `fsck.hfsplus`, `mkfs.apfs`, `apfsck`, `fsck.apfs`, `bcachefs`, `lvm`, `pvcreate`, `vgcreate`, `lvcreate`), verifying each prints a version/usage line and exits non-zero properly when invoked incorrectly.
 6. **Record** the device/VM image, Android version, ABI, and results in the release notes or PR.
 
 > **Permissions note:** staging directories are normalized to `0700` and files to owner-only modes (`0700` executables, `0600` data). The bundle's manifest records only file/symlink entries — directory entries are intentionally omitted (parents are implied) — so final directory modes are applied by the app-side installer. Files are executable only by the owning uid: once the app installs the toolchain, that uid is the app's own. When smoke-testing manually over adb, extraction runs as a different uid, so use `adb root` and `chmod`/`chown` to make the binaries executable for the testing context if execution is denied.
