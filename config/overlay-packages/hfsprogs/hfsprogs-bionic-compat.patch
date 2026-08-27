@@ -1,0 +1,36 @@
+--- a/include/missing.h	2026-08-27 00:00:00.000000000 +0000
++++ b/include/missing.h	2026-08-27 00:00:00.000000000 +0000
+@@ -125,4 +125,33 @@
+ 
+ #define KAUTH_FILESEC_XATTR "com.apple.system.Security"
+ 
++/* Bionic compatibility shims: BSD legacy functions removed from Bionic */
++#include <string.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <malloc.h>
++#include <sys/types.h>
++
++#ifndef bzero
++#define bzero(b, n) memset((b), 0, (n))
++#endif
++#ifndef bcopy
++#define bcopy(s, d, n) memmove((d), (s), (n))
++#endif
++#ifndef bcmp
++#define bcmp(a, b, n) memcmp((a), (b), (n))
++#endif
++
++#ifdef __ANDROID__
++/* valloc removed from Bionic */
++static inline void *valloc(size_t size) {
++	return memalign(sysconf(_SC_PAGESIZE), size);
++}
++/* getloadavg not available at API 24 */
++static inline int getloadavg(double loadavg[], int nelem) {
++	(void)loadavg; (void)nelem;
++	return -1;
++}
++#endif
++
+ #endif
