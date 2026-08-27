@@ -13,3 +13,18 @@ TERMUX_PKG_EXTRA_CONFIGURE_ARGS="--bindir=$TERMUX_PREFIX/bin --sbindir=$TERMUX_P
 #   out of <sys/types.h>; include <sys/sysmacros.h> on Linux.
 # jfsutils-1.1.15-stdint.patch: libfs/devices.h uses uint types without including <stdint.h>.
 # jfsutils-1.1.15-gcc10_fix-1.patch: -fno-common default in GCC >= 10 (BLFS).
+# jfsutils-1.1.15-mntent-bionic.patch: Bionic declares hasmntopt() only from API 26
+#   and lacks glibc's _PATH_MNTTAB; comma-token scan + fallback define.
+
+termux_step_post_make_install() {
+	# Upstream's install rules create the fsck.jfs/mkfs.jfs alias man pages as
+	# hard links to jfs_fsck.8/jfs_mkfs.8, and termux's man-page compression
+	# refuses multi-link files ("has 1 other link -- file ignored"), failing the
+	# build. Break the man-page hard links into independent copies first.
+	local man_file
+	for man_file in "$TERMUX_PREFIX"/share/man/man8/*.8; do
+		if [ -f "$man_file" ] && [ "$(stat -c %h "$man_file")" -gt 1 ]; then
+			cp -f "$man_file" "$man_file.dedup" && mv -f "$man_file.dedup" "$man_file"
+		fi
+	done
+}

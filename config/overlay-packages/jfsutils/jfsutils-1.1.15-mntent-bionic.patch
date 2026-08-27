@@ -1,0 +1,41 @@
+--- a/libfs/fssubs.c
++++ b/libfs/fssubs.c
+@@ -29,6 +29,38 @@
+ #include <mntent.h>
+ #undef HAVE_GETMNTINFO		/* we don't want both */
+ #endif
++
++#if defined(__ANDROID__) && __ANDROID_API__ < 26
++/*
++ * Bionic declares hasmntopt() in <mntent.h> only from API level 26; the
++ * MNTOPT_* macros themselves are unconditional. Provide a comma-token scan
++ * with glibc semantics (token may end at NUL, ',', or '=') for older APIs.
++ */
++static char *hasmntopt(struct mntent *mnt, const char *opt)
++{
++	size_t len = strlen(opt);
++	char *p = mnt->mnt_opts;
++
++	if (p == NULL)
++		return NULL;
++	while (*p != '\0') {
++		if (strncmp(p, opt, len) == 0 &&
++		    (p[len] == '\0' || p[len] == ',' || p[len] == '='))
++			return p;
++		p = strchr(p, ',');
++		if (p == NULL)
++			break;
++		++p;
++	}
++	return NULL;
++}
++#endif
++
++#ifndef _PATH_MNTTAB
++/* glibc's <paths.h> defines this; Bionic does not. Keep upstream's fstab path. */
++#define _PATH_MNTTAB "/etc/fstab"
++#endif
++
+ 
+ #if HAVE_GETMNTINFO
+ #include <paths.h>
