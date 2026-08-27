@@ -1,6 +1,6 @@
 --- a/include/platform_defs.h
 +++ b/include/platform_defs.h
-@@ -335,4 +335,123 @@
+@@ -335,4 +335,140 @@
  #define __counted_by_ptr(member)
  #endif
  
@@ -88,26 +88,30 @@
 +#endif
 +
 +/*
-+ * Bionic gates POSIX password/group database iteration behind API 26; the
-+ * struct definitions are unconditional, so only the function declarations
-+ * are missing on older API levels.  The symbols themselves are exported by
-+ * libc on every supported Android release.
++ * Bionic gates getpwent()/setpwent() behind API 26 and does not export those
++ * symbols in the API 24 NDK sysroot, so linking against API 24 fails.  The
++ * pwd.h/grp.h companions (endpwent, getgrent, setgrent, endgrent) already
++ * exist there as static inline no-op stubs and must NOT be redeclared.
++ * Provide trivial stubs: iteration over /etc/passwd is meaningless on
++ * Android (no traditional user DB).
 + */
 +#if defined(__ANDROID__) && __ANDROID_API__ < 26
-+extern struct passwd *getpwent(void);
-+extern void setpwent(void);
-+extern void endpwent(void);
-+extern struct group *getgrent(void);
-+extern void setgrent(void);
-+extern void endgrent(void);
++static inline struct passwd *getpwent(void) { return NULL; }
++static inline void setpwent(void) { }
 +#endif
 +
 +/*
-+ * Bionic declares syncfs() only since API 28; the libc symbol exists on all
-+ * supported Android releases.
++ * Bionic gains syncfs() (declaration and libc symbol) only at API 28; older
++ * sysroots must reach the kernel syscall directly. __NR_syncfs exists since
++ * Linux 2.6.39, so the syscall is available on all supported kernels.
 + */
 +#if defined(__ANDROID__) && __ANDROID_API__ < 28
-+extern int syncfs(int fd);
++#include <sys/syscall.h>
++#include <unistd.h>
++static inline int syncfs(int fd)
++{
++	return syscall(__NR_syncfs, fd);
++}
 +#endif
 +
 +/*
@@ -121,6 +125,19 @@
 +				  unsigned int flags)
 +{
 +	return syscall(__NR_sync_file_range, fd, offset, nbytes, flags);
++}
++#endif
++
++#if defined(__ANDROID__)
++/*
++ * Bionic never declares or exports quotactl(); issue the syscall directly.
++ * All supported ABIs use the generic argument order for __NR_quotactl.
++ */
++#include <sys/syscall.h>
++#include <unistd.h>
++static inline int quotactl(int cmd, const char *special, int id, void *addr)
++{
++	return syscall(__NR_quotactl, cmd, special, id, addr);
 +}
 +#endif
  #endif	/* __XFS_PLATFORM_DEFS_H__ */
