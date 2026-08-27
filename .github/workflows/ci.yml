@@ -97,7 +97,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        package: [parted, e2fsprogs, dosfstools, exfatprogs, f2fs-tools, btrfs-progs, libcryptsetup, lvm2, util-linux, coreutils, ntfsprogs-plus, jfsutils, hfsprogs, apfsprogs, bcachefs-tools]
+        package: [parted, e2fsprogs, dosfstools, exfatprogs, f2fs-tools, btrfs-progs, libcryptsetup, lvm2, util-linux, coreutils, ntfsprogs-plus, xfsprogs, jfsutils, hfsprogs, apfsprogs, bcachefs-tools]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

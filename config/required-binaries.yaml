@@ -57,6 +57,11 @@ required_binaries:
   - ntfslabel
   - ntfsresize
 
+  # XFS filesystems (xfsprogs)
+  - mkfs.xfs
+  - xfs_repair
+  - xfs_admin
+  - xfs_growfs
 
   # JFS filesystems (jfsutils)
   - mkfs.jfs
