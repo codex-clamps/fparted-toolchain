@@ -6,14 +6,14 @@ TERMUX_PKG_MAINTAINER="Shadichy <shadichy@blisslabs.org>"
 TERMUX_PKG_VERSION=1.3
 TERMUX_PKG_SRCURL=https://github.com/koverstreet/bcachefs-tools/archive/refs/tags/v${TERMUX_PKG_VERSION}.tar.gz
 TERMUX_PKG_SHA256=2e53f6864e89a44e9fff85d9588244b6cf742c9c98bade01276bc9c6fe41c2de
-TERMUX_PKG_DEPENDS="libblkid, libuuid, liburcu, libsodium, zlib, liblz4, zstd, keyutils"
+TERMUX_PKG_DEPENDS="libblkid, libuuid, liburcu, libsodium, zlib, liblz4, zstd, keyutils, libaio"
 TERMUX_PKG_BUILD_IN_SRC=true
 
 # v1.3 is the last C-only release; later versions require Rust/bindgen and
 # libclang, which the pinned toolchain does not provide.
 # The initramfs integration and FUSE variant are skipped (NO_BCACHEFS_FS).
 termux_step_make() {
-	make -j "$TERMUX_MAKE_PROCESSES" \
+	make -j "$TERMUX_PKG_MAKE_PROCESSES" \
 		CC="$CC" \
 		NO_BCACHEFS_FS=1 \
 		NO_RUST=1 \
@@ -36,5 +36,6 @@ termux_step_make_install() {
 #   uatomic_set() do-statement breaks compilation with current liburcu.
 # bcachefs-tools-1.3-glibc23-bsearch-macro.patch: #undef glibc's C23
 #   const-generic bsearch macro so include/linux/bsearch.h compiles.
-# bcachefs-tools-1.3-types-include-order.patch: include <asm/types.h> before
-#   <fcntl.h> so __u64 is defined when glibc pulls in linux/openat2.h.
+# bcachefs-tools-1.3-bionic-api24-compat.patch: Bionic API 24 compatibility fixes:
+#   include_next chaining for types.h/wait.h/stat.h to avoid header collision with NDK,
+#   aligned_alloc shim via memalign, and pointer-based byteorder macros.

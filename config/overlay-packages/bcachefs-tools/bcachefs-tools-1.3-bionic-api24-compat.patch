@@ -1,10 +1,10 @@
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -97,6 +97,16 @@
+--- a/include/linux/slab.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/slab.h	2026-08-28 04:34:54.392891298 +0700
+@@ -97,6 +97,15 @@
  #define kcalloc(n, size, flags)		kmalloc_array(n, size, flags|__GFP_ZERO)
  
  #define kfree(p)			free(p)
-+#if defined(__ANDROID__) && (__ANDROID_API__ < 28)
++#if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 28)
 +/*
 + * Bionic only exposes aligned_alloc() from API level 28; Termux builds
 + * against API 24.  memalign() has identical arguments and is available
@@ -13,30 +13,457 @@
 +#include <malloc.h>
 +#define aligned_alloc(alignment, size)	memalign((alignment), (size))
 +#endif
-+
  #define kzfree(p)			free(p)
  
  #define kvmalloc(size, flags)		kmalloc(size, flags)
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -12,6 +12,20 @@
- #include <linux/byteorder.h>
- #include <linux/compiler.h>
- #include <linux/math.h>
-+
-+#if defined(__ANDROID__) && (__ANDROID_API__ < 28)
-+/*
-+ * Bionic only declares strchrnul() from API level 28; Termux builds
-+ * against API 24.
-+ */
-+#include <string.h>
-+static inline char *strchrnul(const char *s, int c)
-+{
-+	char *ret = strchr(s, c);
-+
-+	return ret ? ret : (char *) s + strlen(s);
-+}
+--- a/include/linux/byteorder.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/byteorder.h	2026-08-28 05:42:49.782601959 +0700
+@@ -32,18 +32,18 @@
+ #define be32_to_cpu __be32_to_cpu
+ #define cpu_to_be16 __cpu_to_be16
+ #define be16_to_cpu __be16_to_cpu
+-#define cpu_to_le64p __cpu_to_le64p
+-#define le64_to_cpup __le64_to_cpup
+-#define cpu_to_le32p __cpu_to_le32p
+-#define le32_to_cpup __le32_to_cpup
+-#define cpu_to_le16p __cpu_to_le16p
+-#define le16_to_cpup __le16_to_cpup
+-#define cpu_to_be64p __cpu_to_be64p
+-#define be64_to_cpup __be64_to_cpup
+-#define cpu_to_be32p __cpu_to_be32p
+-#define be32_to_cpup __be32_to_cpup
+-#define cpu_to_be16p __cpu_to_be16p
+-#define be16_to_cpup __be16_to_cpup
++#define cpu_to_le64p(x) __cpu_to_le64(*(__u64 const *)(x))
++#define le64_to_cpup(x) __le64_to_cpu(*(__le64 const *)(x))
++#define cpu_to_le32p(x) __cpu_to_le32(*(__u32 const *)(x))
++#define le32_to_cpup(x) __le32_to_cpu(*(__le32 const *)(x))
++#define cpu_to_le16p(x) __cpu_to_le16(*(__u16 const *)(x))
++#define le16_to_cpup(x) __le16_to_cpu(*(__le16 const *)(x))
++#define cpu_to_be64p(x) __cpu_to_be64(*(__u64 const *)(x))
++#define be64_to_cpup(x) __be64_to_cpu(*(__be64 const *)(x))
++#define cpu_to_be32p(x) __cpu_to_be32(*(__u32 const *)(x))
++#define be32_to_cpup(x) __be32_to_cpu(*(__be32 const *)(x))
++#define cpu_to_be16p(x) __cpu_to_be16(*(__u16 const *)(x))
++#define be16_to_cpup(x) __be16_to_cpu(*(__be16 const *)(x))
+ #define cpu_to_le64s __cpu_to_le64s
+ #define le64_to_cpus __le64_to_cpus
+ #define cpu_to_le32s __cpu_to_le32s
+--- a/include/linux/compiler.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/compiler.h	2026-08-28 04:34:54.392959210 +0700
+@@ -56,7 +56,11 @@
+ #define __sched
+ #define __init
+ #define __exit
++/* Bionic <bits/pthread_types.h> declares struct fields named `__private`.
++ * Do not define __private on Android/Bionic. */
++#ifndef __ANDROID__
+ #define __private
++#endif
+ #define __must_check
+ #define __malloc
+ #define __weak			__attribute__((weak))
+--- a/include/linux/math.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/math.h	2026-08-28 04:34:54.393099268 +0700
+@@ -153,6 +153,7 @@
+ }
+ #endif
+ 
++#ifndef __ANDROID__
+ #define abs(x)	__abs_choose_expr(x, long long,				\
+ 		__abs_choose_expr(x, long,				\
+ 		__abs_choose_expr(x, int,				\
+@@ -162,6 +163,7 @@
+ 			__builtin_types_compatible_p(typeof(x), char),	\
+ 			(char)({ signed char __x = (x); __x<0?-__x:__x; }), \
+ 			((void)0)))))))
 +#endif
  
- #define BIT(nr)			(1UL << (nr))
- #define BIT_ULL(nr)		(1ULL << (nr))
+ #define __abs_choose_expr(x, type, other) __builtin_choose_expr(	\
+ 	__builtin_types_compatible_p(typeof(x),   signed type) ||	\
+--- a/include/linux/types.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/types.h	2026-08-28 05:52:35.014450565 +0700
+@@ -1,14 +1,12 @@
+ #ifndef _TOOLS_LINUX_TYPES_H_
+ #define _TOOLS_LINUX_TYPES_H_
+ 
++#include_next <linux/types.h>
++
+ #include <stdbool.h>
+ #include <stddef.h>
+ #include <stdint.h>
+ 
+-#include <fcntl.h>
+-#include <sys/stat.h>
+-#include <sys/types.h>
+-
+ #define __SANE_USERSPACE_TYPES__	/* For PPC64, to get LL64 types */
+ #include <asm/types.h>
+ 
+@@ -48,16 +46,25 @@
+ typedef __u8  u8;
+ typedef __s8  s8;
+ 
++typedef unsigned long ulong;
++typedef unsigned int uint;
++typedef unsigned short ushort;
++typedef unsigned char uchar;
++
++#ifndef __bitwise__
+ #ifdef __CHECKER__
+ #define __bitwise__ __attribute__((bitwise))
+ #else
+ #define __bitwise__
+ #endif
++#endif
++#ifndef __bitwise
+ #ifdef __CHECK_ENDIAN__
+ #define __bitwise __bitwise__
+ #else
+ #define __bitwise
+ #endif
++#endif
+ 
+ #define __force
+ #define __user
+--- a/include/linux/wait.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/wait.h	2026-08-28 06:29:57.344987201 +0700
+@@ -1,10 +1,52 @@
+-#ifndef _LINUX_WAIT_H
+-#define _LINUX_WAIT_H
++#ifndef _TOOLS_LINUX_WAIT_H
++#define _TOOLS_LINUX_WAIT_H
++
++#include_next <linux/wait.h>
+ 
+-#include <pthread.h>
+ #include <linux/bitmap.h>
+ #include <linux/list.h>
++
++#ifndef __SPINLOCK_TYPES_DEFINED
++#define __SPINLOCK_TYPES_DEFINED
++typedef struct {
++	pthread_mutex_t lock;
++} raw_spinlock_t;
++
++typedef raw_spinlock_t spinlock_t;
++#endif
++
++struct wait_queue_head {
++	spinlock_t		lock;
++	struct list_head	task_list;
++};
++
++typedef struct wait_queue_head wait_queue_head_t;
++
++#define __WAIT_QUEUE_HEAD_INITIALIZER(name) {				\
++	.lock		= (raw_spinlock_t) { .lock = PTHREAD_MUTEX_INITIALIZER }, \
++	.task_list	= { &(name).task_list, &(name).task_list } }
++
++#define DECLARE_WAIT_QUEUE_HEAD(name) \
++	struct wait_queue_head name = __WAIT_QUEUE_HEAD_INITIALIZER(name)
++
++int pthread_mutex_init(pthread_mutex_t *, const pthread_mutexattr_t *);
++
++static inline void init_waitqueue_head(wait_queue_head_t *q)
++{
++	pthread_mutex_init(&q->lock.lock, NULL);
++	INIT_LIST_HEAD(&q->task_list);
++}
++
++#ifndef __STRUCT_COMPLETION_DEFINED
++#define __STRUCT_COMPLETION_DEFINED
++struct completion {
++	unsigned int done;
++	wait_queue_head_t wait;
++};
++#endif
++
+ #include <linux/spinlock.h>
++#include <pthread.h>
+ 
+ typedef struct __wait_queue wait_queue_t;
+ typedef int (*wait_queue_func_t)(wait_queue_t *wait, unsigned mode, int flags, void *key);
+@@ -18,13 +60,6 @@
+ 	struct list_head	task_list;
+ };
+ 
+-struct wait_queue_head {
+-	spinlock_t		lock;
+-	struct list_head	task_list;
+-};
+-
+-typedef struct wait_queue_head wait_queue_head_t;
+-
+ void wake_up(wait_queue_head_t *);
+ void wake_up_all(wait_queue_head_t *);
+ void prepare_to_wait(wait_queue_head_t *q, wait_queue_t *wait, int state);
+@@ -39,19 +74,6 @@
+ 		.task_list	= { NULL, NULL }			\
+ 	}
+ 
+-#define __WAIT_QUEUE_HEAD_INITIALIZER(name) {				\
+-	.lock		= __SPIN_LOCK_UNLOCKED(name.lock),		\
+-	.task_list	= { &(name).task_list, &(name).task_list } }
+-
+-#define DECLARE_WAIT_QUEUE_HEAD(name) \
+-	struct wait_queue_head name = __WAIT_QUEUE_HEAD_INITIALIZER(name)
+-
+-static inline void init_waitqueue_head(wait_queue_head_t *q)
+-{
+-	spin_lock_init(&q->lock);
+-	INIT_LIST_HEAD(&q->task_list);
+-}
+-
+ #define DEFINE_WAIT(name)						\
+ 	wait_queue_t name = {						\
+ 		.private	= current,				\
+@@ -135,4 +157,4 @@
+ #define wait_on_bit_io(w, b, m)			wait_on_bit(w, b, m)
+ #define wait_on_bit_lock_io(w, b, m)		wait_on_bit_lock(w, b, m)
+ 
+-#endif /* _LINUX_WAIT_H */
++#endif /* _TOOLS_LINUX_WAIT_H */
+--- a/include/linux/completion.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/completion.h	2026-08-28 06:29:57.345105339 +0700
+@@ -10,10 +10,13 @@
+ 
+ #include <linux/wait.h>
+ 
++#ifndef __STRUCT_COMPLETION_DEFINED
++#define __STRUCT_COMPLETION_DEFINED
+ struct completion {
+ 	unsigned int done;
+ 	wait_queue_head_t wait;
+ };
++#endif
+ 
+ #define DECLARE_COMPLETION(work)					\
+ 	struct completion work = {					\
+--- a/include/linux/sched.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/sched.h	2026-08-28 06:10:27.916355612 +0700
+@@ -1,14 +1,17 @@
+ #ifndef __TOOLS_LINUX_SCHED_H
+ #define __TOOLS_LINUX_SCHED_H
+ 
++#include_next <linux/sched.h>
++
+ #include <pthread.h>
+ #include <time.h>
+ #include <linux/atomic.h>
+ #include <linux/bug.h>
+-#include <linux/completion.h>
++#include <linux/wait.h>
+ #include <linux/jiffies.h>
+ #include <linux/rwsem.h>
+ #include <linux/time64.h>
++#include <linux/completion.h>
+ 
+ #define TASK_RUNNING		0
+ #define TASK_INTERRUPTIBLE	1
+@@ -109,16 +112,15 @@
+ 
+ static inline struct task_struct *get_task_struct(struct task_struct *task)
+ {
+-	atomic_inc(&task->usage);
++	uatomic_inc(&task->usage.counter);
+ 	return task;
+-
+ }
+ 
+ extern void __put_task_struct(struct task_struct *t);
+ 
+ static inline void put_task_struct(struct task_struct *t)
+ {
+-	if (atomic_dec_and_test(&t->usage))
++	if (uatomic_sub_return(&t->usage.counter, 1) == 0)
+ 		__put_task_struct(t);
+ }
+ 
+--- a/include/linux/stat.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/stat.h	2026-08-28 05:34:16.032867719 +0700
+@@ -1,12 +1,35 @@
+-#ifndef _LINUX_STAT_H
+-#define _LINUX_STAT_H
++#ifndef _TOOLS_LINUX_STAT_H
++#define _TOOLS_LINUX_STAT_H
+ 
++#include_next <linux/stat.h>
+ #include <sys/stat.h>
+ 
++#ifndef S_ISDIR
++#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
++#endif
++#ifndef S_ISCHR
++#define S_ISCHR(m) (((m) & S_IFMT) == S_IFCHR)
++#endif
++#ifndef S_ISBLK
++#define S_ISBLK(m) (((m) & S_IFMT) == S_IFBLK)
++#endif
++#ifndef S_ISREG
++#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
++#endif
++#ifndef S_ISFIFO
++#define S_ISFIFO(m) (((m) & S_IFMT) == S_IFIFO)
++#endif
++#ifndef S_ISLNK
++#define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
++#endif
++#ifndef S_ISSOCK
++#define S_ISSOCK(m) (((m) & S_IFMT) == S_IFSOCK)
++#endif
++
+ #define S_IRWXUGO	(S_IRWXU|S_IRWXG|S_IRWXO)
+ #define S_IALLUGO	(S_ISUID|S_ISGID|S_ISVTX|S_IRWXUGO)
+ #define S_IRUGO		(S_IRUSR|S_IRGRP|S_IROTH)
+ #define S_IWUGO		(S_IWUSR|S_IWGRP|S_IWOTH)
+ #define S_IXUGO		(S_IXUSR|S_IXGRP|S_IXOTH)
+ 
+-#endif
++#endif /* _TOOLS_LINUX_STAT_H */
+--- a/include/linux/spinlock.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/spinlock.h	2026-08-28 04:51:45.405639789 +0700
+@@ -4,10 +4,15 @@
+ #include <linux/atomic.h>
+ #include <pthread.h>
+ 
++#ifndef __SPINLOCK_TYPES_DEFINED
++#define __SPINLOCK_TYPES_DEFINED
+ typedef struct {
+ 	pthread_mutex_t lock;
+ } raw_spinlock_t;
+ 
++typedef raw_spinlock_t spinlock_t;
++#endif
++
+ #define __RAW_SPIN_LOCK_UNLOCKED(name)	(raw_spinlock_t) { .lock = PTHREAD_MUTEX_INITIALIZER  }
+ 
+ static inline void raw_spin_lock_init(raw_spinlock_t *lock)
+@@ -41,8 +46,6 @@
+ 
+ #define raw_spin_unlock_irqrestore(lock, flags) raw_spin_unlock(lock)
+ 
+-typedef raw_spinlock_t spinlock_t;
+-
+ #define __SPIN_LOCK_UNLOCKED(name)	__RAW_SPIN_LOCK_UNLOCKED(name)
+ 
+ #define DEFINE_SPINLOCK(x)	spinlock_t x = __SPIN_LOCK_UNLOCKED(x)
+--- a/include/linux/kernel.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/kernel.h	2026-08-28 05:34:16.033201062 +0700
+@@ -99,13 +99,17 @@
+ 	(type *)((char *)__mptr - offsetof(type, member)); })
+ #endif
+ 
++#ifndef __struct_group
+ #define __struct_group(TAG, NAME, ATTRS, MEMBERS...) \
+ 	union { \
+ 		struct { MEMBERS } ATTRS; \
+ 		struct TAG { MEMBERS } ATTRS NAME; \
+ 	}
++#endif
++#ifndef struct_group
+ #define struct_group(NAME, MEMBERS...)	\
+ 	__struct_group(/* no tag */, NAME, /* no attrs */, MEMBERS)
++#endif
+ 
+ #define max(x, y) ({				\
+ 	typeof(x) _max1 = (x);			\
+--- a/include/linux/bitops.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/bitops.h	2026-08-28 05:52:35.014355636 +0700
+@@ -2,10 +2,13 @@
+ #define _TOOLS_LINUX_BITOPS_H_
+ 
+ #include <asm/types.h>
+-#include <linux/kernel.h>
+ #include <linux/compiler.h>
+ #include <linux/page.h>
+ 
++#ifndef DIV_ROUND_UP
++#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
++#endif
++
+ #ifndef __WORDSIZE
+ #define __WORDSIZE (__SIZEOF_LONG__ * 8)
+ #endif
+--- a/include/linux/bitmap.h	2023-10-26 00:59:16.000000000 +0700
++++ b/include/linux/bitmap.h	2026-08-28 06:01:01.924435246 +0700
+@@ -3,6 +3,7 @@
+ 
+ #include <string.h>
+ #include <linux/bitops.h>
++#include <linux/kernel.h>
+ #include <stdlib.h>
+ 
+ #define DECLARE_BITMAP(name,bits) \
+--- a/tools-util.h	2023-10-26 00:59:16.000000000 +0700
++++ b/tools-util.h	2026-08-28 06:39:52.116614757 +0700
+@@ -2,15 +2,49 @@
+ #define _TOOLS_UTIL_H
+ 
+ #include <errno.h>
++#include <fcntl.h>
+ #include <mntent.h>
+ #include <stdbool.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <sys/ioctl.h>
+ #include <sys/stat.h>
++#include <sys/syscall.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
++#if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 28)
++static inline int syncfs(int fd)
++{
++#if defined(__NR_syncfs)
++	return syscall(__NR_syncfs, fd);
++#elif defined(SYS_syncfs)
++	return syscall(SYS_syncfs, fd);
++#else
++	sync();
++	return 0;
++#endif
++}
++#endif
++
++#if defined(__ANDROID__) && defined(__ANDROID_API__) && (__ANDROID_API__ < 26)
++static inline char *hasmntopt(const struct mntent *mnt, const char *opt)
++{
++	char *o = mnt ? mnt->mnt_opts : NULL;
++	size_t len;
++	if (!o || !opt)
++		return NULL;
++	len = strlen(opt);
++	while ((o = strstr(o, opt)) != NULL) {
++		if ((o == mnt->mnt_opts || *(o - 1) == ',') &&
++		    (*(o + len) == '\0' || *(o + len) == ',' || *(o + len) == '='))
++			return o;
++		o += len;
++	}
++	return NULL;
++}
++#endif
++
+ #include <linux/bug.h>
+ #include <linux/byteorder.h>
+ #include <linux/kernel.h>
+--- a/libbcachefs.h	2023-10-26 00:59:16.000000000 +0700
++++ b/libbcachefs.h	2026-08-28 05:08:31.278350877 +0700
+@@ -1,6 +1,7 @@
+ #ifndef _LIBBCACHE_H
+ #define _LIBBCACHE_H
+ 
++#include <fcntl.h>
+ #include <linux/uuid.h>
+ #include <stdbool.h>
+ 
+--- a/libbcachefs/inode.h	2023-10-26 00:59:16.000000000 +0700
++++ b/libbcachefs/inode.h	2026-08-28 05:34:16.033033316 +0700
+@@ -2,6 +2,7 @@
+ #ifndef _BCACHEFS_INODE_H
+ #define _BCACHEFS_INODE_H
+ 
++#include <linux/stat.h>
+ #include "bkey.h"
+ #include "opts.h"
+ 
