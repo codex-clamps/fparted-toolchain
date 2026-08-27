@@ -13,7 +13,7 @@ TERMUX_PKG_BUILD_IN_SRC=true
 termux_step_make() {
 	local d
 	for d in mkapfs apfsck apfs-label apfs-snap; do
-		make -j "$TERMUX_MAKE_PROCESSES" -C "$d" \
+		make -j "$TERMUX_PKG_MAKE_PROCESSES" -C "$d" \
 			CC="$CC" \
 			CFLAGS="$CFLAGS" \
 			LDFLAGS="$LDFLAGS" \
