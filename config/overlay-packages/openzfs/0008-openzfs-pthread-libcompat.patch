@@ -1,0 +1,40 @@
+--- a/lib/libtpool/thread_pool.c
++++ b/lib/libtpool/thread_pool.c
+@@ -30,6 +30,7 @@
+ #include <assert.h>
+ #include <limits.h>
+ #include "thread_pool_impl.h"
++#include <libcompat/pthread.h>
+ 
+ static pthread_mutex_t thread_pool_lock = PTHREAD_MUTEX_INITIALIZER;
+ static tpool_t *thread_pools = NULL;
+--- a/lib/libzfs/libzfs_diff.c
++++ b/lib/libzfs/libzfs_diff.c
+@@ -42,6 +42,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <pthread.h>
++#include <libcompat/pthread.h>
+ #include <sys/zfs_ioctl.h>
+ #include <libzfs.h>
+ #include <libzutil.h>
+--- a/lib/libzfs/libzfs_sendrecv.c
++++ b/lib/libzfs/libzfs_sendrecv.c
+@@ -49,6 +49,7 @@
+ #include <sys/debug.h>
+ #include <sys/stat.h>
+ #include <pthread.h>
++#include <libcompat/pthread.h>
+ #include <umem.h>
+ #include <time.h>
+ 
+--- a/cmd/zed/zed_disk_event.c
++++ b/cmd/zed/zed_disk_event.c
+@@ -23,6 +23,7 @@
+ #include <libzfs.h>
+ #include <libzutil.h>
+ #include <pthread.h>
++#include <libcompat/pthread.h>
+ #include <stdlib.h>
+ #include <string.h>
+ 

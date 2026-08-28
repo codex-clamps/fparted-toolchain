@@ -66,6 +66,7 @@ DEFAULT_REQUIRED_BINARIES = [
     "mkfs.apfs", "mkapfs", "apfs-label", "apfs-snap", "apfsck", "fsck.apfs",
     "mkfs.bcachefs", "mkfs.fuse.bcachefs", "fsck.bcachefs", "fsck.fuse.bcachefs",
     "mount.bcachefs", "mount.fuse.bcachefs", "bcachefs",
+    "xorriso", "zfs", "zpool", "zdb",
 ]
 
 REQUIRED_BINARIES = DEFAULT_REQUIRED_BINARIES

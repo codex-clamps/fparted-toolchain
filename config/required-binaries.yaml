@@ -88,3 +88,12 @@ required_binaries:
   - mount.bcachefs
   - mount.fuse.bcachefs
   - bcachefs
+
+  # ISO 9660 filesystems (xorriso)
+  - xorriso
+
+  # ZFS filesystems (openzfs)
+  - zfs
+  - zpool
+  - zdb
+

@@ -1,0 +1,12 @@
+--- a/lib/libspl/include/sys/time.h
++++ b/lib/libspl/include/sys/time.h
+@@ -27,8 +27,8 @@
+ #ifndef _LIBSPL_SYS_TIME_H
+ #define	_LIBSPL_SYS_TIME_H
+ 
++#include <sys/types.h>
+ #include <time.h>
+-#include <sys/types.h>
+ #include_next <sys/time.h>
+ 
+ #ifndef SEC

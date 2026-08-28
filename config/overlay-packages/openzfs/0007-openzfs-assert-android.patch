@@ -1,0 +1,26 @@
+--- a/lib/libspl/assert.c
++++ b/lib/libspl/assert.c
+@@ -31,14 +31,21 @@
+ 
+ #if defined(__linux__)
+ #include <errno.h>
++#include <unistd.h>
+ #include <sys/prctl.h>
+-#ifdef HAVE_GETTID
++#if defined(__ANDROID__)
++#include <stdlib.h>
++pid_t gettid(void);
+ #define	libspl_gettid()		gettid()
++#define	libspl_getprogname()	getprogname()
++#elif defined(HAVE_GETTID)
++#define	libspl_gettid()		gettid()
++#define	libspl_getprogname()	(program_invocation_short_name)
+ #else
+ #include <sys/syscall.h>
+ #define	libspl_gettid()		((pid_t)syscall(__NR_gettid))
++#define	libspl_getprogname()	(program_invocation_short_name)
+ #endif
+-#define	libspl_getprogname()	(program_invocation_short_name)
+ #define	libspl_getthreadname(buf, len)	\
+ 	prctl(PR_GET_NAME, (unsigned long)(buf), 0, 0, 0)
+ #elif defined(__FreeBSD__) || defined(__APPLE__)

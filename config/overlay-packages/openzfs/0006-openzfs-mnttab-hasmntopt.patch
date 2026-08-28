@@ -1,0 +1,10 @@
+--- a/lib/libspl/include/os/linux/sys/mnttab.h
++++ b/lib/libspl/include/os/linux/sys/mnttab.h
+@@ -32,6 +32,7 @@
+ 
+ #include <stdio.h>
+ #include <mntent.h>
++#include <libcompat/mntent.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ 

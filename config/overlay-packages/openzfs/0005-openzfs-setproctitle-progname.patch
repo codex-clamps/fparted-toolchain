@@ -1,0 +1,18 @@
+--- a/lib/libzutil/os/linux/zutil_setproctitle.c
++++ b/lib/libzutil/os/linux/zutil_setproctitle.c
+@@ -53,6 +53,7 @@
+ #define	LIBBSD_IS_PATHNAME_SEPARATOR(c) ((c) == '/')
+ #define	SPT_MAXTITLE 255
+ 
++#ifndef __ANDROID__
+ extern const char *__progname;
+ 
+ static const char *
+@@ -74,6 +75,7 @@
+ 	}
+ 	__progname = progname;
+ }
++#endif
+ 
+ 
+ static inline size_t

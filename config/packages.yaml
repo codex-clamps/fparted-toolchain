@@ -52,3 +52,12 @@ packages:
   bcachefs-tools:
     description: "BCachefs filesystem utilities"
     provides: [mkfs.bcachefs, mkfs.fuse.bcachefs, fsck.bcachefs, fsck.fuse.bcachefs, mount.bcachefs, mount.fuse.bcachefs, bcachefs]
+  xorriso:
+    description: "ISO 9660 Rock Ridge / Joliet filesystem manipulator"
+    provides: [xorriso, xorrisofs, osirrox]
+  openzfs:
+    description: "OpenZFS userland filesystem utilities"
+    provides: [zfs, zpool, zdb]
+  libcompat:
+    description: "Compatibility library for Android Bionic API 24"
+    provides: []

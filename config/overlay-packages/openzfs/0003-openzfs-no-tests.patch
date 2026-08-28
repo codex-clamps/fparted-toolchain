@@ -1,0 +1,17 @@
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -20,14 +20,8 @@
+ 
+ if CONFIG_USER
+ include $(srcdir)/%D%/cmd/Makefile.am
+-include $(srcdir)/%D%/contrib/Makefile.am
+-include $(srcdir)/%D%/etc/Makefile.am
+ include $(srcdir)/%D%/lib/Makefile.am
+ include $(srcdir)/%D%/man/Makefile.am
+-include $(srcdir)/%D%/tests/Makefile.am
+-if BUILD_LINUX
+-include $(srcdir)/%D%/udev/Makefile.am
+-endif
+ endif
+ CPPCHECKDIRS += module
+ if CONFIG_KERNEL

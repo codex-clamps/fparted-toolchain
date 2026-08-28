@@ -1,0 +1,10 @@
+--- a/cmd/zstream/zstream_decompress.c
++++ b/cmd/zstream/zstream_decompress.c
+@@ -26,6 +26,7 @@
+ 
+ #include <err.h>
+ #include <search.h>
++#include <libcompat/search.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
