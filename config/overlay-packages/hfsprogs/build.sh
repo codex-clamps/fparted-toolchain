@@ -41,8 +41,10 @@ termux_step_make_install() {
 	install -Dm755 -t "$TERMUX_PREFIX/bin" \
 		newfs_hfs.tproj/newfs_hfs \
 		fsck_hfs.tproj/fsck_hfs
-	ln -sf mkfs.hfsplus "$TERMUX_PREFIX/bin/mkfs.hfs"
-	ln -sf fsck.hfsplus "$TERMUX_PREFIX/bin/fsck.hfs"
+	ln -sf newfs_hfs "$TERMUX_PREFIX/bin/mkfs.hfsplus"
+	ln -sf newfs_hfs "$TERMUX_PREFIX/bin/mkfs.hfs"
+	ln -sf fsck_hfs "$TERMUX_PREFIX/bin/fsck.hfsplus"
+	ln -sf fsck_hfs "$TERMUX_PREFIX/bin/fsck.hfs"
 }
 
 # hfsplus-tools-no-blocks.patch: drop the Apple Blocks extension dependency.
