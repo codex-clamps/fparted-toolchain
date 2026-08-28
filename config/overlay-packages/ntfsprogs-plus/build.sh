@@ -28,3 +28,7 @@ termux_step_pre_configure() {
 	# GitHub API tarballs ship no generated configure script.
 	./autogen.sh
 }
+
+termux_step_post_make_install() {
+	ln -sf ntfsck "$TERMUX_PREFIX/bin/ntfsfix"
+}
