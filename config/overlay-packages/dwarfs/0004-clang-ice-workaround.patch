@@ -1,0 +1,10 @@
+--- a/src/writer/internal/entry_storage.cpp	2026-08-29 17:14:37.557566360 +0700
++++ b/src/writer/internal/entry_storage.cpp	2026-08-29 17:14:37.564566394 +0700
+@@ -2740,6 +2740,6 @@
+   requires is_mutable
+ {
+   LOG_PROXY(debug_logger_policy, lgr);
+-  std::optional<std::decay_t<decltype(LOG_TIMED_VERBOSE)>> timer;
++  std::optional<debug_logger_policy::timed_logger_type<logger::VERBOSE>> timer;
+ 
+   auto const utf8_count = shared_.utf8_path_component_count();

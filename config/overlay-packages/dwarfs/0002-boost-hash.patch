@@ -1,0 +1,55 @@
+--- a/src/writer/internal/entry_storage.cpp
++++ b/src/writer/internal/entry_storage.cpp
+@@ -29,3 +29,3 @@
+ #include <boost/atomic.hpp>
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/src/writer/fragment_category.cpp
++++ b/src/writer/fragment_category.cpp
+@@ -23,3 +23,3 @@
+ #include <boost/algorithm/string.hpp>
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/src/writer/categorizer/pcmaudio_categorizer.cpp
++++ b/src/writer/categorizer/pcmaudio_categorizer.cpp
+@@ -36,3 +36,3 @@
+ #include <boost/algorithm/string.hpp>
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/src/writer/categorizer/fits_categorizer.cpp
++++ b/src/writer/categorizer/fits_categorizer.cpp
+@@ -34,3 +34,3 @@
+ #include <boost/algorithm/string.hpp>
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/src/internal/event_tracer.cpp
++++ b/src/internal/event_tracer.cpp
+@@ -33,3 +33,3 @@
+ 
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/include/dwarfs/writer/internal/unique_inode_id.h
++++ b/include/dwarfs/writer/internal/unique_inode_id.h
+@@ -29,3 +29,3 @@
+ 
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/include/dwarfs/writer/internal/entry_handle.h
++++ b/include/dwarfs/writer/internal/entry_handle.h
+@@ -33,3 +33,3 @@
+ 
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>
+ 
+--- a/frozen/thrift/lib/cpp2/frozen/schema/MemorySchema.h
++++ b/frozen/thrift/lib/cpp2/frozen/schema/MemorySchema.h
+@@ -16,3 +16,3 @@
+ 
+-#include <boost/container_hash/hash.hpp>
++#include <boost/functional/hash.hpp>

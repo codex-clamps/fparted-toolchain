@@ -97,3 +97,8 @@ required_binaries:
   - zpool
   - zdb
 
+  # DwarFS filesystems (dwarfs)
+  - mkdwarfs
+  - dwarfs
+  - dwarfsck
+  - dwarfsextract

@@ -61,3 +61,6 @@ packages:
   libcompat:
     description: "Compatibility library for Android Bionic API 24"
     provides: []
+  dwarfs:
+    description: "Fast, high compression read-only file system"
+    provides: [mkdwarfs, dwarfs, dwarfsck, dwarfsextract]

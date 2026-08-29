@@ -1,8 +1,7 @@
-staging/
-build/
+/staging/
+/build/
 *.pyc
-__pycache__
-*.egg-info
-dist/
+__pycache__/
+*.egg-info/
+/dist/
 .rootfs-manifest.json
-

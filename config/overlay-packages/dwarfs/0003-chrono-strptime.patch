@@ -1,0 +1,22 @@
+--- a/src/util.cpp	2026-08-29 17:07:18.410899406 +0700
++++ b/src/util.cpp	2026-08-29 17:07:18.420517879 +0700
+@@ -740,11 +740,19 @@
+   for (auto const& fmt : formats) {
+     std::istringstream iss(str);
+     std::chrono::system_clock::time_point tp;
++#if defined(__ANDROID__)
++    std::tm t = {};
++    if (strptime(str.c_str(), fmt, &t) != nullptr) {
++        tp = std::chrono::system_clock::from_time_t(timegm(&t));
++        return tp;
++    }
++#else
+ #if DWARFS_USE_HH_DATE
+     date::from_stream(iss, fmt, tp);
+ #else
+     std::chrono::from_stream(iss, fmt, tp);
+ #endif
++#endif
+     if (!iss.fail()) {
+       iss.peek();
+       if (iss.eof()) {

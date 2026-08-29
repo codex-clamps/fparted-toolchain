@@ -1,0 +1,65 @@
+--- a/sfx/stub.c
++++ b/sfx/stub.c
+@@ -43,6 +43,28 @@
+ #include <sys/wait.h>
+ #include <unistd.h>
+ 
++#if defined(__ANDROID__) && __ANDROID_API__ < 30
++#include <sys/syscall.h>
++#ifndef MFD_ALLOW_SEALING
++#define MFD_ALLOW_SEALING 0x0002U
++#endif
++#ifndef MFD_EXEC
++#define MFD_EXEC 0x0010U
++#endif
++static inline int memfd_create(const char *name, unsigned int flags) {
++    return syscall(SYS_memfd_create, name, flags);
++}
++#endif
++
++#if defined(__ANDROID__) && __ANDROID_API__ < 28
++static inline int fexecve(int fd, char *const argv[], char *const envp[]) {
++    char path[64];
++    // stub.c includes nanoprintf so npf_snprintf is readily available
++    npf_snprintf(path, sizeof(path), "/proc/self/fd/%d", fd);
++    return execve(path, argv, envp);
++}
++#endif
++
+ #ifdef DWARFS_SFX_STUB_USE_LZ4
+ #include <lz4.h>
+ #include <xxhash.h>
+--- a/src/os_access_generic.cpp	2026-08-29 17:06:51.041318117 +0700
++++ b/src/os_access_generic.cpp	2026-08-29 17:06:51.057318192 +0700
+@@ -67,6 +67,31 @@
+ #include <dwarfs/internal/read_file_view.h>
+ #include <dwarfs/internal/thread_util.h>
+ 
++#if defined(__ANDROID__)
++#include <sched.h>
++#include <sys/syscall.h>
++
++#ifndef CPUCLOCK_SCHED
++#define CPUCLOCK_SCHED 2
++#endif
++
++// Polyfill pthread_setaffinity_np
++static inline int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t *cpuset) {
++    pid_t tid = pthread_gettid_np(thread);
++    return sched_setaffinity(tid, cpusetsize, cpuset) == 0 ? 0 : errno;
++}
++
++#if __ANDROID_API__ < 28
++// Polyfill pthread_getcpuclockid
++static inline int dwarfs_pthread_getcpuclockid(pthread_t thread, clockid_t* clockid) {
++    pid_t tid = pthread_gettid_np(thread);
++    *clockid = (~(static_cast<clockid_t>(tid)) << 3) | CPUCLOCK_SCHED;
++    return 0;
++}
++#define pthread_getcpuclockid dwarfs_pthread_getcpuclockid
++#endif
++#endif
++
+ namespace dwarfs {
+ 
+ namespace fs = std::filesystem;
