@@ -4,9 +4,8 @@ TERMUX_PKG_DESCRIPTION="Android boot image unpacking, repacking, and hexpatching
 TERMUX_PKG_LICENSE="GPL-3.0"
 TERMUX_PKG_MAINTAINER="fparted <fparted@shadichy.vn>"
 TERMUX_PKG_VERSION="27.0"
-_COMMIT="5bdf354924ec984df6d84f88baad7adabef594a9"
-TERMUX_PKG_SRCURL="https://github.com/topjohnwu/Magisk/archive/refs/tags/v${TERMUX_PKG_VERSION}.tar.gz"
-TERMUX_PKG_SHA256="3a26a5d03602720322aaf764783d2acbaad8c2f070dec3f57b9113a699136a14"
+TERMUX_PKG_SRCURL="https://github.com/topjohnwu/Magisk.git"
+TERMUX_PKG_GIT_BRANCH="v${TERMUX_PKG_VERSION}"
 TERMUX_PKG_DEPENDS="liblzma, liblz4, zlib, bzip2"
 TERMUX_PKG_BUILD_IN_SRC=true
 

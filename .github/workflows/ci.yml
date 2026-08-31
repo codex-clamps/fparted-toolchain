@@ -195,9 +195,18 @@ jobs:
               print(json.load(f)['pinned_termux_commit'])
           " > /tmp/termux-commit.txt
           echo "termux_commit=$(cat /tmp/termux-commit.txt)" >> "$GITHUB_OUTPUT"
+      - name: Determine toolchain version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION="0.5.1-dev"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
       - name: Build rootfs for ${{ matrix.abi }}
         run: |
-          bash scripts/build-rootfs.sh "${{ matrix.abi }}" "${{ steps.lock.outputs.termux_commit }}"
+          bash scripts/build-rootfs.sh "${{ matrix.abi }}" "${{ steps.lock.outputs.termux_commit }}" "${{ steps.version.outputs.version }}"
         env:
           TERMUX_APP__PACKAGE_NAME: vn.shadichy.parted
           TERMUX__ROOTFS: /data/data/vn.shadichy.parted/files
@@ -293,7 +302,10 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/v}"
           for bundle in release-output/fparted-rootfs-*.zip; do
             abi=$(basename "${bundle}" .zip | grep -oP '(?:arm64-v8a|x86_64)$')
-            mv "${bundle}" "release-output/fparted-rootfs-${VERSION}-${abi}.zip"
+            target="release-output/fparted-rootfs-${VERSION}-${abi}.zip"
+            if [[ "${bundle}" != "${target}" ]]; then
+              mv "${bundle}" "${target}"
+            fi
           done
           ls -1 release-output/fparted-rootfs-*.zip
       - name: Import release signing key

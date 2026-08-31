@@ -2,10 +2,10 @@
 # build-rootfs.sh — Build a deterministic rootfs bundle for one Android ABI.
 #
 # Usage:
-#   bash scripts/build-rootfs.sh <android-abi> [termux-commit]
+#   bash scripts/build-rootfs.sh <android-abi> [termux-commit] [toolchain-version]
 #
 # Example:
-#   bash scripts/build-rootfs.sh arm64-v8a 436ebf0f917285fe86659e9d4e43c0d257256f75
+#   bash scripts/build-rootfs.sh arm64-v8a 436ebf0f917285fe86659e9d4e43c0d257256f75 0.5.2
 #
 # Environment:
 #   TERMUX_APP__PACKAGE_NAME  = vn.shadichy.parted
@@ -22,13 +22,14 @@ LOCK_FILE="${CONFIG_DIR}/termux-lock.json"
 
 # Validate arguments
 if [[ $# -lt 1 ]]; then
-    echo "Usage: $0 <android-abi> [termux-commit]" >&2
+    echo "Usage: $0 <android-abi> [termux-commit] [toolchain-version]" >&2
     echo "  ABI must be one of: arm64-v8a x86_64" >&2
     exit 1
 fi
 
 TARGET_ABI="$1"
 TERMUX_COMMIT="${2:-}"
+TOOLCHAIN_VERSION="${3:-1.0.0}"
 
 # ABI validation
 case "${TARGET_ABI}" in
@@ -347,6 +348,7 @@ python3 "${SCRIPT_DIR}/assemble-rootfs.py" \
     --abi "${TARGET_ABI}" \
     --rootfs-dir "${ROOTFS_DIR}" \
     --output "${STAGING_DIR}" \
+    --toolchain-version "${TOOLCHAIN_VERSION}" \
     --termux-commit "${TERMUX_COMMIT}" \
     --prefix /data/data/vn.shadichy.parted/files
 

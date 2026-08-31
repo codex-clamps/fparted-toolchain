@@ -10,6 +10,10 @@
       "type": "string",
       "const": "1.1"
     },
+    "toolchain_version": {
+      "type": "string",
+      "description": "Semantic version of the toolchain bundle"
+    },
     "generated_at": {
       "type": "string",
       "format": "date-time"

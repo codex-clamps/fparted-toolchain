@@ -123,6 +123,7 @@ def assemble_bundle(
     # Generate manifest
     manifest = {
         "schema_version": "1.1",
+        "toolchain_version": toolchain_version,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "abi": abi,
         "termux_commit": termux_commit,

@@ -64,3 +64,18 @@ packages:
   dwarfs:
     description: "Fast, high compression read-only file system"
     provides: [mkdwarfs, dwarfs, dwarfsck, dwarfsextract]
+  android-tools:
+    description: "Android platform dynamic partition tools (lpdump, lpmake, lpunpack)"
+    provides: [lpdump, lpmake, lpunpack]
+  lptools:
+    description: "Live dynamic partition manipulation tool for Android (lptools)"
+    provides: [lptools]
+  magiskboot:
+    description: "Android boot image unpacking and repacking tool"
+    provides: [magiskboot]
+  payload-dumper-go:
+    description: "Android and ChromeOS OTA payload.bin partition extractor"
+    provides: [payload-dumper-go]
+  protobuf:
+    description: "Protocol Buffers compiler and runtime library"
+    provides: [protoc]

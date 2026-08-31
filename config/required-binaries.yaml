@@ -102,3 +102,17 @@ required_binaries:
   - dwarfs
   - dwarfsck
   - dwarfsextract
+
+  # Android Dynamic Partitions (android-tools)
+  - lpdump
+  - lpmake
+  - lpunpack
+
+  # Live Dynamic Partition Operations (lptools)
+  - lptools
+
+  # Android Boot Image Operations (magiskboot)
+  - magiskboot
+
+  # Android / ChromeOS OTA Payload Extraction (payload-dumper-go)
+  - payload-dumper-go
